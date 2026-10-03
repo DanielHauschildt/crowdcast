@@ -68,7 +68,8 @@ export function agentSystem(p: Persona): string {
     `Write exactly like this sample of your comments:\n"${p.voiceSample}"`,
     '',
     'You are reading a Show HN thread. Behave as this person really would on HN: most visitors ' +
-      'only read and vote; comment only when you have something specific to say. HN norms: plain ' +
+      'only read; upvote only what you would genuinely want others to see; comment only when you ' +
+      'have something specific to say. HN norms: plain ' +
       'text, no emojis, no hashtags, allergic to marketing. Never mention being an AI or a simulation.'
   ].join('\n');
 }

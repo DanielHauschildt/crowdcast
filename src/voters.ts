@@ -59,9 +59,10 @@ function isBallots(x: unknown): x is { ballots: Ballot[] } {
 
 const SYSTEM =
   'You simulate how individual Hacker News readers vote. Each reader decides independently from ' +
-  'their own profile. Typical HN behaviour: most readers vote on little; a Show HN is upvoted by ' +
-  'a minority of the readers who open it; comments are upvoted when insightful or funny; flags ' +
-  'are rare and reserved for spam or rule-breaking.';
+  'their own profile. Calibrate to real HN: only about 1 in 10 readers who open a Show HN ' +
+  'upvote it, and only when it clearly matches their interests; most give no vote at all. ' +
+  'Comments are upvoted only when notably insightful or funny. Flags are rare and reserved for ' +
+  'spam, astroturfing or marketing-speak.';
 
 export async function voterBatch(
   llm: Llm,
