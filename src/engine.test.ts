@@ -13,12 +13,8 @@ import {
   makeSeed,
   makeVoter
 } from '../test/fixtures.js';
-import {
-  EVENTS_FILE,
-  estimateCalls,
-  readEvents,
-  runSimulation
-} from './engine.js';
+import { estimateCalls, runSimulation } from './engine.js';
+import { EVENTS_FILE, readEvents } from './events.js';
 import { BudgetExceeded, FakeLlm, LlmFatal, type LlmRequest } from './llm.js';
 import type { PersonaSet, SimEvent } from './types.js';
 
