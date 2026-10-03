@@ -1,0 +1,29 @@
+{
+  "name": "@imgly/crowdcast",
+  "version": "0.0.0",
+  "description": "Synthetic launch-thread rehearsal: LLM personas react to a Show HN post.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "crowdcast": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "shx rm -rf dist *.tsbuildinfo",
+    "build": "tsc --build tsconfig.src.json",
+    "check": "tsc --build tsconfig.src.json && tsc --build tsconfig.test.json",
+    "test": "vitest --run",
+    "test:live": "vitest --run --config vitest.live.config.ts"
+  },
+  "dependencies": {
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "fast-check": "^4.9.0",
+    "shx": "^0.4.0",
+    "vitest": "^3.2.0"
+  }
+}
