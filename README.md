@@ -9,7 +9,7 @@ Requires `claude` (Claude Code CLI) on PATH and logged in. Everything else runs 
 pnpm --filter @imgly/crowdcast build
 pnpm crowdcast run simulations/seeds/codesign-show-hn --dry-run
 pnpm crowdcast run simulations/seeds/codesign-show-hn
-pnpm crowdcast compare simulations/seeds/codesign-show-hn --variants default,editable-files,local-first --runs 2
+pnpm crowdcast compare simulations/seeds/codesign-show-hn --variants default,editable-files,local-first --runs 3 --parallel 3
 pnpm crowdcast interview simulations/runs/<run> skeptical-seniors "What would make you try it?"
 pnpm crowdcast report simulations/runs/<run>
 ```
