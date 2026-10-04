@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import { backtest, BACKTEST_USAGE } from './commands/backtest.js';
 import { compareJobs, mapPool } from './commands/compare.js';
 import { parseThreadIds, personasFromHn } from './commands/personas-from-hn.js';
 import { compareMarkdown, summarizeRun } from './compare.js';
@@ -45,7 +46,8 @@ const USAGE = `usage:
   crowdcast compare <seedDir> --variants a,b[,c] [--runs 3] [--parallel 3] [same options as run]
   crowdcast report <runDir>
   crowdcast interview <runDir> <personaId|handle|segment> "<question>"
-  crowdcast personas-from-hn <seedDir> --threads <ids|file> [--max 80]`;
+  crowdcast personas-from-hn <seedDir> --threads <ids|file> [--max 80]
+${BACKTEST_USAGE}`;
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
@@ -170,6 +172,7 @@ export async function main(
   partial: Partial<CliDeps> = {}
 ): Promise<number> {
   const deps = { ...defaults, ...partial };
+  if (argv[0] === 'backtest') return backtest(argv.slice(1), deps);
   let parsed;
   try {
     parsed = parseArgs({
