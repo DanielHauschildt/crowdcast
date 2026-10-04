@@ -28,7 +28,7 @@ function readRequired(dir: string, name: string): string {
   return readFileSync(file, 'utf8');
 }
 
-function parseSegments(text: string): {
+export function parseSegments(text: string): {
   active: number;
   voters: number;
   segments: Segment[];

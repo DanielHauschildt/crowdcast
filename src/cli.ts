@@ -3,6 +3,7 @@ import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import { backtest, BACKTEST_USAGE } from './commands/backtest.js';
 import { compareMarkdown, summarizeRun, type RunSummary } from './compare.js';
 import { estimateCalls, runSimulation } from './engine.js';
 import { interview } from './interview.js';
@@ -39,7 +40,8 @@ const USAGE = `usage:
                 [--resume <runDir>]
   crowdcast compare <seedDir> --variants a,b[,c] [--runs 2] [same options as run]
   crowdcast report <runDir>
-  crowdcast interview <runDir> <personaId|handle|segment> "<question>"`;
+  crowdcast interview <runDir> <personaId|handle|segment> "<question>"
+${BACKTEST_USAGE}`;
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
@@ -148,6 +150,7 @@ export async function main(
   partial: Partial<CliDeps> = {}
 ): Promise<number> {
   const deps = { ...defaults, ...partial };
+  if (argv[0] === 'backtest') return backtest(argv.slice(1), deps);
   let parsed;
   try {
     parsed = parseArgs({

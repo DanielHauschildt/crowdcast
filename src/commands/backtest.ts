@@ -1,0 +1,180 @@
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync
+} from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { parseArgs } from 'node:util';
+import {
+  backtestThread,
+  loadOrFetchThread,
+  type ThreadScore
+} from '../backtest.js';
+import type { CliDeps } from '../cli.js';
+import type { FetchFn } from '../hn.js';
+import { loadOrGeneratePersonas } from '../personas.js';
+import {
+  aggregate,
+  historyRow,
+  HISTORY_HEADER,
+  parseThreadList,
+  scorecardMarkdown
+} from '../scorecard.js';
+import { parseSegments } from '../seed.js';
+import type { Seed } from '../types.js';
+
+export const BACKTEST_USAGE = `  crowdcast backtest [<hn-id>…] [--threads simulations/backtests/threads.txt] [--steps 6]
+                     [--parallel 3] [--seed 1] [--concurrency 4] [--max-calls 400] [--note "…"]`;
+
+const OPTIONS = {
+  threads: { type: 'string', default: 'simulations/backtests/threads.txt' },
+  steps: { type: 'string', default: '6' },
+  parallel: { type: 'string', default: '3' },
+  seed: { type: 'string', default: '1' },
+  concurrency: { type: 'string', default: '4' },
+  'max-calls': { type: 'string', default: '400' },
+  note: { type: 'string', default: '' }
+} as const;
+
+const pad = (n: number): string => String(n).padStart(2, '0');
+const stampOf = (d: Date): string =>
+  `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}-${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}`;
+
+async function pool<T>(
+  items: readonly T[],
+  limit: number,
+  work: (item: T) => Promise<void>
+): Promise<void> {
+  let next = 0;
+  const lane = async (): Promise<void> => {
+    while (next < items.length) await work(items[next++]!);
+  };
+  await Promise.all(
+    Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, lane)
+  );
+}
+
+export async function backtest(
+  argv: string[],
+  deps: CliDeps & { fetch?: FetchFn }
+): Promise<number> {
+  let v;
+  let positionals;
+  try {
+    ({ values: v, positionals } = parseArgs({
+      args: argv,
+      options: OPTIONS,
+      allowPositionals: true
+    }));
+  } catch (err) {
+    deps.log(`${(err as Error).message}\nusage:\n${BACKTEST_USAGE}`);
+    return 2;
+  }
+  try {
+    return await runBacktest(v, positionals, deps);
+  } catch (err) {
+    deps.log(`error: ${(err as Error).message}`);
+    return 1;
+  }
+}
+
+type Values = ReturnType<
+  typeof parseArgs<{ options: typeof OPTIONS; allowPositionals: true }>
+>['values'];
+
+async function runBacktest(
+  v: Values,
+  positionals: string[],
+  deps: CliDeps & { fetch?: FetchFn }
+): Promise<number> {
+  const threadsFile = resolve(v.threads);
+  const root = dirname(threadsFile);
+  const ids =
+    positionals.length > 0
+      ? positionals.map(Number)
+      : parseThreadList(readFileSync(threadsFile, 'utf8'));
+  if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+    deps.log(`backtest: no valid HN ids\nusage:\n${BACKTEST_USAGE}`);
+    return 2;
+  }
+  const steps = Number(v.steps);
+  const rngSeed = Number(v.seed);
+  const concurrency = Number(v.concurrency);
+  const segs = parseSegments(readFileSync(join(root, 'segments.yaml'), 'utf8'));
+  const audience: Seed = {
+    name: 'backtest',
+    dir: root,
+    context: '',
+    founderAnswers: '',
+    hypotheses: '',
+    segments: segs.segments,
+    activeCount: segs.active,
+    voterCount: segs.voters
+  };
+  const personas = await loadOrGeneratePersonas(
+    deps.makeLlm({ concurrency }),
+    audience,
+    join(root, 'personas', `seed-${rngSeed}.json`)
+  );
+  const stamp = stampOf(deps.now());
+  deps.log(
+    `backtest ${stamp}: ${ids.length} threads, ${personas.personas.length} personas, ${personas.voters.length} voters, ${steps} steps`
+  );
+
+  const scores = new Map<number, ThreadScore>();
+  await pool(ids, Number(v.parallel), async (id) => {
+    try {
+      const threadDir = join(root, 'threads', String(id));
+      const real = await loadOrFetchThread(threadDir, id, deps.fetch);
+      const runDir = join(root, 'runs', `${stamp}-hn${id}-s${rngSeed}`);
+      mkdirSync(runDir, { recursive: true });
+      const s = await backtestThread({
+        llm: deps.makeLlm({
+          concurrency,
+          maxCalls: Number(v['max-calls']),
+          logFile: join(runDir, 'calls.jsonl')
+        }),
+        real,
+        threadDir,
+        runDir,
+        seed: { ...audience, name: `hn-${id}`, dir: threadDir },
+        personas,
+        steps,
+        rngSeed
+      });
+      scores.set(id, s);
+      deps.log(
+        `  ${id}: sim ${s.simPoints} pts / ${s.simComments} comments vs real ${s.realPoints} / ${s.realComments}` +
+          (s.aborted ? ` (aborted: ${s.aborted})` : '')
+      );
+    } catch (err) {
+      deps.log(`  ${id}: failed — ${(err as Error).message}`);
+    }
+  });
+
+  const ordered = ids.flatMap((id) => scores.get(id) ?? []);
+  if (ordered.length === 0) {
+    deps.log('backtest: every thread failed');
+    return 1;
+  }
+  const agg = aggregate(ordered);
+  const meta = { stamp, steps, seed: rngSeed };
+  const outDir = join(root, stamp);
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(
+    join(outDir, 'scorecard.md'),
+    scorecardMarkdown(ordered, agg, meta)
+  );
+  writeFileSync(join(outDir, 'scores.json'), JSON.stringify(ordered, null, 2));
+  const history = join(root, 'history.md');
+  if (!existsSync(history))
+    writeFileSync(history, `# Backtest history\n\n${HISTORY_HEADER}\n`);
+  appendFileSync(
+    history,
+    `${historyRow(agg, { ...meta, note: v.note || `${ordered.length} threads` })}\n`
+  );
+  deps.log(`scorecard: ${join(outDir, 'scorecard.md')}`);
+  return 0;
+}
