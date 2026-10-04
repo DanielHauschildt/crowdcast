@@ -30,11 +30,11 @@ export function visitorFraction(band: Band, step: number): number {
     case 'top10':
       return 1;
     case 'top30':
-      return 0.6;
+      return 0.75;
     case 'page2':
-      return 0.25;
+      return 0.4;
     case 'new':
-      return step < 3 ? 0.1 : 0.05;
+      return step < 3 ? 0.3 : 0.12;
   }
 }
 

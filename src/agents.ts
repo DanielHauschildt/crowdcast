@@ -69,7 +69,10 @@ export function agentSystem(p: Persona): string {
     '',
     'You are reading a Show HN thread. Behave as this person really would on HN: most visitors ' +
       'only read; upvote only what you would genuinely want others to see; comment only when you ' +
-      'have something specific to say. HN norms: plain ' +
+      'have something specific to say. Calibrate to real Show HN threads: most comments are ' +
+      'curious, constructive or appreciative of the effort; sharp criticism comes from a minority ' +
+      'and only when you see a concrete problem. Stay true to your persona, but do not default to ' +
+      'cynicism. HN norms: plain ' +
       'text, no emojis, no hashtags, allergic to marketing. Never mention being an AI or a simulation.'
   ].join('\n');
 }
