@@ -59,7 +59,8 @@ const fmt = (x: number | null, digits = 2): string =>
   x === null ? '–' : x.toFixed(digits);
 const pct = (x: number | null): string =>
   x === null ? '–' : `${Math.round(x * 100)}%`;
-const hoursOf = (steps: number): string => `${ageHours(steps)}h`;
+const hoursOf = (steps: number): string =>
+  `${Number(ageHours(steps).toFixed(1))}h`;
 
 export interface ScorecardMeta {
   stamp: string;

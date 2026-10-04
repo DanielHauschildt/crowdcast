@@ -104,6 +104,13 @@ describe('scorecardMarkdown', () => {
     expect(md).toContain('- ✓ pricing');
     expect(md).toContain('- ✗ perf');
     expect(md).not.toContain('NaN');
+    expect(
+      scorecardMarkdown(scores, aggregate(scores), {
+        stamp: 'x',
+        steps: 2,
+        seed: 1
+      })
+    ).toContain('points @ 0.7h');
   });
 });
 
