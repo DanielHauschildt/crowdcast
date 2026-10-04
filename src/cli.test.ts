@@ -118,7 +118,7 @@ describe('cli', () => {
     expect(existsSync(join(seedDir, 'personas', 'seed-1.json'))).toBe(true);
   });
 
-  it('compare runs every variant and writes compare.md', async () => {
+  it('compare runs every variant 3 times by default and writes compare.md', async () => {
     const { seedDir, root } = workspace();
     const code = await main(
       [
@@ -126,15 +126,15 @@ describe('cli', () => {
         seedDir,
         '--variants',
         'default,b',
-        '--runs',
-        '2',
         '--steps',
-        '1'
+        '1',
+        '--parallel',
+        '2'
       ],
       deps([])
     );
     expect(code).toBe(0);
-    expect(readdirSync(join(root, 'runs'))).toHaveLength(4);
+    expect(readdirSync(join(root, 'runs'))).toHaveLength(6);
     const [cmp] = readdirSync(join(root, 'compares'));
     expect(
       readFileSync(join(root, 'compares', cmp!, 'compare.md'), 'utf8')

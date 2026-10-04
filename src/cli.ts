@@ -3,7 +3,8 @@ import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { compareMarkdown, summarizeRun, type RunSummary } from './compare.js';
+import { compareJobs, mapPool } from './commands/compare.js';
+import { compareMarkdown, summarizeRun } from './compare.js';
 import { estimateCalls, runSimulation } from './engine.js';
 import { interview } from './interview.js';
 import { ClaudeCli, type Llm } from './llm.js';
@@ -37,7 +38,7 @@ const USAGE = `usage:
   crowdcast run <seedDir> [--variant default] [--seed 1] [--persona-seed N] [--runs 1]
                 [--steps 12] [--max-calls 400] [--concurrency 8] [--dry-run] [--no-report]
                 [--resume <runDir>]
-  crowdcast compare <seedDir> --variants a,b[,c] [--runs 2] [same options as run]
+  crowdcast compare <seedDir> --variants a,b[,c] [--runs 3] [--parallel 3] [same options as run]
   crowdcast report <runDir>
   crowdcast interview <runDir> <personaId|handle|segment> "<question>"`;
 
@@ -59,6 +60,7 @@ const OPTIONS = {
   seed: { type: 'string', default: '1' },
   'persona-seed': { type: 'string' },
   runs: { type: 'string' },
+  parallel: { type: 'string', default: '3' },
   steps: { type: 'string', default: String(DEFAULT_STEPS) },
   'max-calls': { type: 'string', default: '400' },
   concurrency: { type: 'string', default: '8' },
@@ -70,6 +72,16 @@ const OPTIONS = {
 type Values = ReturnType<
   typeof parseArgs<{ options: typeof OPTIONS; allowPositionals: true }>
 >['values'];
+
+function loadPersonas(deps: CliDeps, seedDir: string, v: Values) {
+  const seed = loadSeed(seedDir);
+  const personaSeed = Number(v['persona-seed'] ?? v.seed);
+  return loadOrGeneratePersonas(
+    deps.makeLlm({ concurrency: Number(v.concurrency), logFile: undefined }),
+    seed,
+    join(seed.dir, 'personas', `seed-${personaSeed}.json`)
+  );
+}
 
 async function runOne(
   deps: CliDeps,
@@ -84,12 +96,7 @@ async function runOne(
   const personaSeed = Number(v['persona-seed'] ?? v.seed);
   const steps = Number(v.steps);
   const concurrency = Number(v.concurrency);
-  const personaLlm = deps.makeLlm({ concurrency, logFile: undefined });
-  const personas = await loadOrGeneratePersonas(
-    personaLlm,
-    seed,
-    join(seed.dir, 'personas', `seed-${personaSeed}.json`)
-  );
+  const personas = await loadPersonas(deps, seedDir, v);
 
   if (v['dry-run']) {
     const est = estimateCalls(personas, steps);
@@ -132,7 +139,7 @@ async function runOne(
     steps,
     onStep: (e) =>
       deps.log(
-        `  step ${e.step + 1}/${steps}: ${e.points} points, band ${e.band}, ${e.calls} calls (${e.failed} failed)`
+        `  ${variant} r${index} step ${e.step + 1}/${steps}: ${e.points} points, band ${e.band}, ${e.calls} calls (${e.failed} failed)`
       )
   });
   if (res.aborted)
@@ -176,22 +183,25 @@ export async function main(
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean);
-        const runs = Number(v.runs ?? 2);
-        const summaries: RunSummary[] = [];
-        for (const variant of variants) {
-          for (let i = 1; i <= runs; i++) {
-            const runDir = await runOne(deps, pos[0], variant, i, v);
-            if (runDir)
-              summaries.push(
-                await summarizeRun(
+        const seedDir = pos[0];
+        // Generate the persona cache once, not once per parallel run.
+        await loadPersonas(deps, seedDir, v);
+        const done = await mapPool(
+          compareJobs(variants, Number(v.runs ?? 3)),
+          Number(v.parallel),
+          async ({ variant, index }) => {
+            const runDir = await runOne(deps, seedDir, variant, index, v);
+            return runDir
+              ? summarizeRun(
                   deps.makeLlm({ concurrency: Number(v.concurrency) }),
                   runDir,
                   variant,
-                  i
+                  index
                 )
-              );
+              : null;
           }
-        }
+        );
+        const summaries = done.filter((r) => r !== null);
         if (summaries.length === 0) return 0;
         const seed = loadSeed(pos[0]);
         const dir = join(
