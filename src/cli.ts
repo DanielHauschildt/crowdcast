@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import { parseThreadIds, personasFromHn } from './commands/personas-from-hn.js';
 import { compareMarkdown, summarizeRun, type RunSummary } from './compare.js';
 import { estimateCalls, runSimulation } from './engine.js';
+import type { FetchFn } from './hn-users.js';
 import { interview } from './interview.js';
 import { ClaudeCli, type Llm } from './llm.js';
 import { loadOrGeneratePersonas } from './personas.js';
@@ -16,6 +18,7 @@ import {
 } from './report.js';
 import { DEFAULT_STEPS } from './schedule.js';
 import { loadPost, loadSeed } from './seed.js';
+import type { PersonaSet } from './types.js';
 
 export interface CliDeps {
   makeLlm: (opts: {
@@ -25,6 +28,7 @@ export interface CliDeps {
   }) => Llm;
   now: () => Date;
   log: (msg: string) => void;
+  fetchFn?: FetchFn;
 }
 
 const defaults: CliDeps = {
@@ -36,10 +40,11 @@ const defaults: CliDeps = {
 const USAGE = `usage:
   crowdcast run <seedDir> [--variant default] [--seed 1] [--persona-seed N] [--runs 1]
                 [--steps 12] [--max-calls 400] [--concurrency 8] [--dry-run] [--no-report]
-                [--resume <runDir>]
+                [--resume <runDir>] [--persona-file <path>]
   crowdcast compare <seedDir> --variants a,b[,c] [--runs 2] [same options as run]
   crowdcast report <runDir>
-  crowdcast interview <runDir> <personaId|handle|segment> "<question>"`;
+  crowdcast interview <runDir> <personaId|handle|segment> "<question>"
+  crowdcast personas-from-hn <seedDir> --threads <ids|file> [--max 80]`;
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
@@ -64,7 +69,10 @@ const OPTIONS = {
   concurrency: { type: 'string', default: '8' },
   'dry-run': { type: 'boolean', default: false },
   'no-report': { type: 'boolean', default: false },
-  resume: { type: 'string' }
+  resume: { type: 'string' },
+  'persona-file': { type: 'string' },
+  threads: { type: 'string' },
+  max: { type: 'string', default: '80' }
 } as const;
 
 type Values = ReturnType<
@@ -85,11 +93,13 @@ async function runOne(
   const steps = Number(v.steps);
   const concurrency = Number(v.concurrency);
   const personaLlm = deps.makeLlm({ concurrency, logFile: undefined });
-  const personas = await loadOrGeneratePersonas(
-    personaLlm,
-    seed,
-    join(seed.dir, 'personas', `seed-${personaSeed}.json`)
-  );
+  const personas = v['persona-file']
+    ? (JSON.parse(readFileSync(v['persona-file'], 'utf8')) as PersonaSet)
+    : await loadOrGeneratePersonas(
+        personaLlm,
+        seed,
+        join(seed.dir, 'personas', `seed-${personaSeed}.json`)
+      );
 
   if (v['dry-run']) {
     const est = estimateCalls(personas, steps);
@@ -212,6 +222,21 @@ export async function main(
         deps.log(
           `report: ${await writeReport(deps.makeLlm({ concurrency: Number(v.concurrency), logFile: join(runDir, 'calls.jsonl') }), runDir)}`
         );
+        return 0;
+      }
+      case 'personas-from-hn': {
+        if (!pos[0] || !v.threads) break;
+        const file = await personasFromHn(
+          {
+            llm: deps.makeLlm({ concurrency: Number(v.concurrency) }),
+            fetchFn: deps.fetchFn,
+            log: deps.log
+          },
+          loadSeed(pos[0]),
+          parseThreadIds(v.threads),
+          Number(v.max)
+        );
+        deps.log(`personas: ${file}`);
         return 0;
       }
       case 'interview': {

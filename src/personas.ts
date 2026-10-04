@@ -192,33 +192,47 @@ async function voterChunk(
   return res.value.voters.slice(0, count).map((v) => v.oneLiner);
 }
 
+export async function generateVoters(llm: Llm, seed: Seed): Promise<Voter[]> {
+  const alloc = allocate(seed.segments, seed.voterCount);
+  const perSegment = await Promise.all(
+    seed.segments.map(async (seg) =>
+      (
+        await Promise.all(
+          chunks(alloc.get(seg.id)!, VOTER_CHUNK).map((n, i) =>
+            voterChunk(llm, seg, n, i)
+          )
+        )
+      )
+        .flat()
+        .map((oneLiner) => ({ segment: seg.id, oneLiner }))
+    )
+  );
+  return perSegment.flat().map((v, i) => ({ id: `v${i + 1}`, ...v }));
+}
+
 export async function generatePersonas(
   llm: Llm,
   seed: Seed
 ): Promise<PersonaSet> {
   const active = allocate(seed.segments, seed.activeCount);
-  const voterAlloc = allocate(seed.segments, seed.voterCount);
-  const perSegment = await Promise.all(
-    seed.segments.map(async (seg) => {
-      const [raw, lines] = await Promise.all([
-        Promise.all(
-          chunks(active.get(seg.id)!, PERSONA_CHUNK).map((n, i) =>
-            personaChunk(llm, seg, n, i)
+  const [perSegment, voters] = await Promise.all([
+    Promise.all(
+      seed.segments.map(async (seg) => ({
+        seg,
+        raw: (
+          await Promise.all(
+            chunks(active.get(seg.id)!, PERSONA_CHUNK).map((n, i) =>
+              personaChunk(llm, seg, n, i)
+            )
           )
-        ),
-        Promise.all(
-          chunks(voterAlloc.get(seg.id)!, VOTER_CHUNK).map((n, i) =>
-            voterChunk(llm, seg, n, i)
-          )
-        )
-      ]);
-      return { seg, raw: raw.flat(), lines: lines.flat() };
-    })
-  );
+        ).flat()
+      }))
+    ),
+    generateVoters(llm, seed)
+  ]);
   const personas: Persona[] = [];
-  const voters: Voter[] = [];
   const handles = new Set<string>();
-  for (const { seg, raw, lines } of perSegment) {
+  for (const { seg, raw } of perSegment) {
     for (const r of raw) {
       let handle =
         r.handle.trim().replace(/\s+/g, '_') || `user${personas.length + 1}`;
@@ -239,8 +253,6 @@ export async function generatePersonas(
         tier: tierFor(id)
       });
     }
-    for (const oneLiner of lines)
-      voters.push({ id: `v${voters.length + 1}`, segment: seg.id, oneLiner });
   }
   return { personas, voters };
 }
