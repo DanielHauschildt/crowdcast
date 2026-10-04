@@ -76,6 +76,12 @@ describe('stripHtml', () => {
     ).toBe("a & b's <x>\n\nnext e.com 'q'");
   });
 
+  it('drops doctype, CDATA and processing instructions', () => {
+    expect(stripHtml('<!DOCTYPE html><?xml version="1.0"?><p>Hi</p>')).toBe(
+      'Hi'
+    );
+  });
+
   it('drops script and style bodies', () => {
     expect(
       stripHtml(

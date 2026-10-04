@@ -67,6 +67,7 @@ export function stripHtml(html: string): string {
   const text = html
     .replace(/<(script|style|noscript|svg|head)\b[\s\S]*?<\/\1\s*>/gi, '')
     .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<[!?][^>]*>/g, '')
     .replace(/<(p|br|div|li|h[1-6]|tr|pre|section|article)\b[^>]*>/gi, '\n\n')
     .replace(/<\/?[a-z][^>]*>/gi, '');
   return decodeEntities(text)
