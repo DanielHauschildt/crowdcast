@@ -4,7 +4,9 @@ import { makePost } from '../test/fixtures.js';
 import {
   applyEvent,
   emptyThread,
+  flamewarFactor,
   isDead,
+  postRankScore,
   rankScore,
   renderThread,
   replay,
@@ -136,6 +138,58 @@ describe('rankScore', () => {
         );
       })
     );
+  });
+});
+
+describe('flamewar penalty', () => {
+  it('applies only above 40 comments with more comments than points', () => {
+    expect(flamewarFactor(30, 41)).toBe(0.6);
+    expect(flamewarFactor(30, 40)).toBe(1);
+    expect(flamewarFactor(41, 41)).toBe(1);
+    expect(flamewarFactor(5, 10)).toBe(1);
+  });
+
+  it('never raises the score and bites exactly when the rule holds', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 300 }),
+        fc.integer({ min: 0, max: 120 }),
+        fc.double({ min: 0, max: 24, noNaN: true }),
+        fc.integer({ min: 0, max: 5 }),
+        (points, comments, age, flags) => {
+          const base = rankScore(points, age, flags);
+          const penalised = base * flamewarFactor(points, comments);
+          expect(penalised).toBeLessThanOrEqual(base);
+          const rule = comments > 40 && comments > points;
+          if (!rule || base === 0) expect(penalised).toBe(base);
+          else expect(penalised).toBeLessThan(base);
+        }
+      )
+    );
+  });
+
+  it('postRankScore penalises a post whose live comments outnumber its points', () => {
+    const events: SimEvent[] = [];
+    for (let i = 1; i <= 45; i++) events.push(comment(`c${i}`, 'post'));
+    for (let i = 1; i <= 20; i++)
+      events.push({
+        kind: 'vote',
+        step: 0,
+        voter: `v${i}`,
+        target: 'post',
+        value: 'up'
+      });
+    const s = replay(makePost(), events);
+    expect(postRankScore(s, 1)).toBeCloseTo(rankScore(21, 1, 0) * 0.6);
+    const calm = replay(makePost(), [
+      ...events,
+      ...kill('c1'),
+      ...kill('c2'),
+      ...kill('c3'),
+      ...kill('c4'),
+      ...kill('c5')
+    ]);
+    expect(postRankScore(calm, 1)).toBeCloseTo(rankScore(21, 1, 0));
   });
 });
 

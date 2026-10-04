@@ -113,6 +113,20 @@ export function rankScore(
   );
 }
 
+/** HN's flamewar detector: > 40 comments and more comments than points costs 40% of the rank. */
+export function flamewarFactor(points: number, comments: number): number {
+  return comments > 40 && comments > points ? 0.6 : 1;
+}
+
+/** The post's rank score at `ageHours`, flamewar penalty included. */
+export function postRankScore(s: ThreadState, ageHours: number): number {
+  const points = postPoints(s);
+  return (
+    rankScore(points, ageHours, s.postFlags) *
+    flamewarFactor(points, liveComments(s).length)
+  );
+}
+
 /** The submitter's own vote counts, as on HN. */
 export function postPoints(s: ThreadState): number {
   return 1 + s.postUps;

@@ -10,7 +10,7 @@ import {
   applyEvent,
   newCommentId,
   postPoints,
-  rankScore,
+  postRankScore,
   renderThread,
   replay,
   topComments,
@@ -110,9 +110,7 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
     };
 
     try {
-      const band = bandFor(
-        rankScore(postPoints(state), ageHours(step), state.postFlags)
-      );
+      const band = bandFor(postRankScore(state, ageHours(step)));
       const plan = planVisits({
         rng: rngFor(cfg.rngSeed, step),
         band,
@@ -243,11 +241,7 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
       throw err;
     }
 
-    const score = rankScore(
-      postPoints(state),
-      ageHours(step + 1),
-      state.postFlags
-    );
+    const score = postRankScore(state, ageHours(step + 1));
     const end: StepEnd = {
       kind: 'step-end',
       step,
