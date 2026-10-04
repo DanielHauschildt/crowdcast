@@ -122,6 +122,23 @@ export function commentScore(c: Comment): number {
   return c.ups - 2 * c.flags;
 }
 
+/** HN kills a comment once enough users flag it. */
+export const DEAD_FLAGS = 3;
+
+export function isDead(c: Comment): boolean {
+  return c.flags >= DEAD_FLAGS;
+}
+
+export function liveComments(s: ThreadState): Comment[] {
+  return [...s.comments.values()].filter((c) => !isDead(c));
+}
+
+export function answeredByFounder(s: ThreadState, id: string): boolean {
+  for (const c of s.comments.values())
+    if (c.parent === id && c.author === FOUNDER) return true;
+  return false;
+}
+
 const idNum = (id: string): number => Number(id.slice(1));
 
 export function children(s: ThreadState, parent: string): Comment[] {
@@ -133,7 +150,7 @@ export function children(s: ThreadState, parent: string): Comment[] {
 }
 
 export function topComments(s: ThreadState, n: number): Comment[] {
-  return [...s.comments.values()]
+  return liveComments(s)
     .sort(
       (a, b) => commentScore(b) - commentScore(a) || idNum(a.id) - idNum(b.id)
     )
@@ -158,9 +175,11 @@ export interface RenderOptions {
   maxChars?: number;
 }
 
+/** Live comments below `id`. */
 function countDescendants(s: ThreadState, id: string): number {
   let n = 0;
-  for (const c of children(s, id)) n += 1 + countDescendants(s, c.id);
+  for (const c of children(s, id))
+    n += (isDead(c) ? 0 : 1) + countDescendants(s, c.id);
   return n;
 }
 
@@ -169,6 +188,7 @@ function visibleOrder(s: ThreadState, hidden: Set<string>): Comment[] {
   const walk = (parent: string): void => {
     for (const c of children(s, parent)) {
       if (hidden.has(c.id)) continue;
+      if (isDead(c) && countDescendants(s, c.id) === 0) continue;
       out.push(c);
       if (c.depth < MAX_DEPTH) walk(c.id);
     }
@@ -180,8 +200,11 @@ function visibleOrder(s: ThreadState, hidden: Set<string>): Comment[] {
 function renderComment(s: ThreadState, c: Comment): string {
   const indent = '  '.repeat(c.depth);
   const who = c.author === FOUNDER ? `${c.author} (OP)` : c.author;
+  const answered = answeredByFounder(s, c.id) ? ' · ↳ answered by OP' : '';
   const body = c.text.replace(/\n/g, `\n${indent}`);
-  let out = `${indent}[${c.id}] ${who} · ${commentScore(c)} points\n${indent}${body}\n`;
+  let out = isDead(c)
+    ? `${indent}[dead]\n`
+    : `${indent}[${c.id}] ${who} · ${commentScore(c)} points${answered}\n${indent}${body}\n`;
   if (c.depth === MAX_DEPTH) {
     const deeper = countDescendants(s, c.id);
     if (deeper > 0) out += `${indent}  [${deeper} more replies collapsed]\n`;
@@ -193,7 +216,7 @@ export function renderThread(s: ThreadState, opts: RenderOptions = {}): string {
   const maxChars = opts.maxChars ?? Infinity;
   const url = s.post.url ? ` (${s.post.url})` : '';
   const header =
-    `${s.post.title}${url}\n${postPoints(s)} points | ${s.comments.size} comments\n\n` +
+    `${s.post.title}${url}\n${postPoints(s)} points | ${liveComments(s).length} comments\n\n` +
     `${s.post.body}\n\n---\n`;
   const hidden = new Set<string>();
   const compose = (): string => {

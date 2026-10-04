@@ -4,9 +4,11 @@ import { makePost } from '../test/fixtures.js';
 import {
   applyEvent,
   emptyThread,
+  isDead,
   rankScore,
   renderThread,
   replay,
+  topComments,
   unseenReplies,
   type ThreadState
 } from './thread.js';
@@ -25,6 +27,18 @@ const comment = (
   author,
   text: `text of ${id}`
 });
+
+const flag = (voter: string, target: string): SimEvent => ({
+  kind: 'vote',
+  step: 0,
+  voter,
+  target,
+  value: 'flag'
+});
+
+/** Three distinct flaggers per target — enough to kill a comment. */
+const kill = (target: string): SimEvent[] =>
+  [1, 2, 3].map((i) => flag(`k${i}`, target));
 
 /** Builds a random tree: element i picks a parent among post + c1..c{i}. */
 function treeEvents(picks: number[]): SimEvent[] {
@@ -166,5 +180,67 @@ describe('renderThread', () => {
     expect(out).toContain('[c5]');
     expect(out).not.toContain('[c6]');
     expect(out).toContain('2 more replies collapsed');
+  });
+
+  it('marks comments the OP already answered', () => {
+    const out = renderThread(
+      replay(makePost(), [
+        comment('c1', 'post'),
+        comment('c2', 'c1', 'founder'),
+        comment('c3', 'post')
+      ])
+    );
+    const line = (id: string) =>
+      out.split('\n').find((l) => l.includes(`[${id}]`))!;
+    expect(line('c1')).toContain('↳ answered by OP');
+    expect(line('c3')).not.toContain('answered by OP');
+    expect(line('c2')).toContain('[c2] founder (OP)');
+  });
+
+  it('shows a dead comment with live replies as a bare [dead] placeholder', () => {
+    const s = replay(makePost(), [
+      comment('c1', 'post'),
+      comment('c2', 'c1', 'p2'),
+      comment('c3', 'post'),
+      ...kill('c1'),
+      ...kill('c3')
+    ]);
+    const out = renderThread(s);
+    expect(isDead(s.comments.get('c1')!)).toBe(true);
+    expect(out).not.toContain('[c1]');
+    expect(out).not.toContain('text of c1\n');
+    expect(out).not.toContain('[c3]');
+    expect(out).toContain('[dead]');
+    expect(out).toContain('[c2]');
+    expect(out).toContain('| 1 comments');
+  });
+
+  it('never renders or ranks a dead comment; always renders the live ones', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.nat(), { maxLength: 40 }),
+        fc.array(fc.nat(), { maxLength: 10 }),
+        (picks, deadPicks) => {
+          const events = treeEvents(picks);
+          const n = events.length;
+          const dead = new Set(
+            n === 0 ? [] : deadPicks.map((d) => `c${(d % n) + 1}`)
+          );
+          const s = replay(makePost(), [...events, ...[...dead].flatMap(kill)]);
+          const out = renderThread(s);
+          const top = topComments(s, 100).map((c) => c.id);
+          for (const c of s.comments.values()) {
+            if (dead.has(c.id)) {
+              expect(out).not.toContain(`[${c.id}]`);
+              expect(out).not.toContain(`${c.text}\n`);
+              expect(top).not.toContain(c.id);
+            } else {
+              expect(top).toContain(c.id);
+              if (c.depth <= 4) expect(out).toContain(`[${c.id}]`);
+            }
+          }
+        }
+      )
+    );
   });
 });
