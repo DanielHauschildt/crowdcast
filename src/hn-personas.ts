@@ -82,12 +82,16 @@ const hash = (s: string): number => {
   return h;
 };
 
-/** A generated handle; never the commenter's own. */
-export function handleFor(id: string, username: string): string {
+/** A generated handle; never the commenter's own, nor one already `taken`. */
+export function handleFor(
+  id: string,
+  username: string,
+  taken: ReadonlySet<string> = new Set()
+): string {
   for (let salt = 0; ; salt++) {
     const h = hash(`${id}#${salt}`);
     const handle = `${ADJ[h % 16]}_${NOUN[(h >>> 4) % 16]}${(h >>> 8) % 100}`;
-    if (handle !== username.toLowerCase()) return handle;
+    if (handle !== username.toLowerCase() && !taken.has(handle)) return handle;
   }
 }
 
@@ -293,7 +297,13 @@ export async function buildHnPersonas(
   const built = await Promise.all(
     chosen.map((c, i) => personaFromHn(a.llm, c, a.segments, `h${i + 1}`))
   );
-  const personas = built.filter((p): p is Persona => p !== null);
+  const taken = new Set<string>();
+  const personas = built.flatMap((p, i) => {
+    if (!p) return [];
+    const handle = handleFor(p.id, chosen[i]!.username, taken);
+    taken.add(handle);
+    return [{ ...p, handle }];
+  });
   a.log?.(
     `hn personas: ${personas.length} built, ${quiet} skipped (fewer than ${MIN_COMMENTS} comments), ${built.length - personas.length} failed or leaked`
   );

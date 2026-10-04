@@ -63,6 +63,16 @@ describe('handleFor', () => {
     );
     const h = handleFor('h1', 'x');
     expect(handleFor('h1', h)).not.toBe(h);
+    expect(handleFor('h1', 'x', new Set([h]))).not.toBe(h);
+  });
+
+  it('gives every persona of a large set its own handle', () => {
+    const taken = new Set<string>();
+    for (let i = 1; i <= 2000; i++) {
+      const h = handleFor(`h${i}`, 'x', taken);
+      expect(taken.has(h)).toBe(false);
+      taken.add(h);
+    }
   });
 });
 
