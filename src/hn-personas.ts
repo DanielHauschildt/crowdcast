@@ -145,7 +145,9 @@ const SYSTEM =
   'social simulation. Capture what they know, what they care about, how they argue and how they ' +
   'write. Never include their username, any name they use, a link, an employer they name, or any ' +
   'sentence copied from the comments: paraphrase everything, and write voiceSample as a new ' +
-  'comment on a different topic in their style.';
+  'comment on a different topic in their style. Generalise rare personal details (exact age, ' +
+  'city, life history, hobbies few people share) to the level of a typical HN profile, so the ' +
+  'persona could not be traced back to them.';
 
 const clamp = (x: number, lo: number, hi: number): number =>
   Math.min(hi, Math.max(lo, x));
