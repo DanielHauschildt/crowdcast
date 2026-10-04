@@ -207,6 +207,37 @@ describe('runSimulation', () => {
   });
 });
 
+describe('founder replies in the engine', () => {
+  it('never answers a parent twice and replies at most twice per step', async () => {
+    const llm = new FakeLlm((req) => {
+      if (!req.label.startsWith('founder:')) return world()(req);
+      const ids = [...req.prompt.matchAll(/\[(c\d+)\]/g)].map((m) => m[1]);
+      return {
+        replies: [...ids, ...ids].map((parent) => ({ parent, text: 'hi' }))
+      };
+    });
+    const res = await runSimulation({
+      post: makePost(),
+      seed: makeSeed(),
+      personas,
+      llm,
+      rngSeed: 1,
+      runDir: dir()
+    });
+    const founder = res.events.filter(
+      (e): e is Extract<SimEvent, { kind: 'comment' }> =>
+        e.kind === 'comment' && e.author === 'founder'
+    );
+    expect(founder.length).toBeGreaterThan(2);
+    const parents = founder.map((e) => e.parent);
+    expect(new Set(parents).size).toBe(parents.length);
+    const perStep = new Map<number, number>();
+    for (const e of founder)
+      perStep.set(e.step, (perStep.get(e.step) ?? 0) + 1);
+    expect(Math.max(...perStep.values())).toBeLessThanOrEqual(2);
+  });
+});
+
 describe('estimateCalls', () => {
   it('grows with steps and population', () => {
     const a = estimateCalls(personas, 6);

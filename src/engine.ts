@@ -2,7 +2,7 @@ import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { agentTurn } from './agents.js';
 import { EVENTS_FILE, readEvents } from './events.js';
-import { founderTurn } from './founder.js';
+import { founderTurn, pickFounderReplies } from './founder.js';
 import { BudgetExceeded, LlmFatal, type Llm } from './llm.js';
 import { rngFor } from './rng.js';
 import { ageHours, bandFor, DEFAULT_STEPS, planVisits } from './schedule.js';
@@ -224,16 +224,14 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
       });
       if (!fr.ok) fail(FOUNDER, fr.error);
       else {
-        for (const r of fr.value) {
-          const parent = state.comments.get(r.parent);
-          if (!parent || parent.author === FOUNDER || !r.text.trim()) continue;
+        for (const r of pickFounderReplies(state, fr.value)) {
           emit({
             kind: 'comment',
             step,
             id: newCommentId(state),
             parent: r.parent,
             author: FOUNDER,
-            text: r.text.trim()
+            text: r.text
           });
         }
       }
