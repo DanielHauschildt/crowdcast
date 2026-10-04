@@ -8,7 +8,8 @@ import { FakeLlm } from './llm.js';
 import {
   allocate,
   generatePersonas,
-  loadOrGeneratePersonas
+  loadOrGeneratePersonas,
+  tierFor
 } from './personas.js';
 
 describe('allocate', () => {
@@ -40,6 +41,24 @@ describe('allocate', () => {
   });
 });
 
+describe('tierFor', () => {
+  it('is deterministic and only haiku or sonnet', () => {
+    fc.assert(
+      fc.property(fc.string(), (id) => {
+        expect(['haiku', 'sonnet']).toContain(tierFor(id));
+        expect(tierFor(id)).toBe(tierFor(id));
+      })
+    );
+  });
+
+  it('assigns about 60% haiku', () => {
+    const ids = Array.from({ length: 2000 }, (_, i) => `p${i + 1}`);
+    const haiku = ids.filter((id) => tierFor(id) === 'haiku').length;
+    expect(haiku / ids.length).toBeGreaterThan(0.55);
+    expect(haiku / ids.length).toBeLessThan(0.65);
+  });
+});
+
 describe('generatePersonas', () => {
   const seed = makeSeed({
     segments: [
@@ -61,6 +80,7 @@ describe('generatePersonas', () => {
       expect(p.contrarian).toBe(1);
     }
     expect(set.personas.filter((p) => p.segment === 'a')).toHaveLength(12);
+    for (const p of set.personas) expect(p.tier).toBe(tierFor(p.id));
   });
 
   it('uses opus and chunks persona calls by 10', async () => {

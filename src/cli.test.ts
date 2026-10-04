@@ -9,8 +9,9 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { personaHandler } from '../test/fixtures.js';
+import { makePersona, makeVoter, personaHandler } from '../test/fixtures.js';
 import { main, runDirName } from './cli.js';
+import type { FetchFn } from './hn-users.js';
 import { FakeLlm, type LlmRequest } from './llm.js';
 
 function workspace(): { seedDir: string; root: string } {
@@ -153,6 +154,80 @@ describe('cli', () => {
       )
     ).toBe(0);
     expect(logs.join('\n')).toContain('fine');
+  });
+
+  it('run --persona-file uses that persona set instead of generating one', async () => {
+    const { seedDir, root } = workspace();
+    const file = join(root, 'hn.json');
+    const set = {
+      personas: [makePersona(1, { id: 'h1', handle: 'from_file' })],
+      voters: [makeVoter(1)]
+    };
+    writeFileSync(file, JSON.stringify(set));
+    const llms: FakeLlm[] = [];
+    const makeLlm = () => {
+      const llm = new FakeLlm(everything);
+      llms.push(llm);
+      return llm;
+    };
+    expect(
+      await main(
+        ['run', seedDir, '--persona-file', file, '--steps', '1', '--no-report'],
+        { ...deps([]), makeLlm }
+      )
+    ).toBe(0);
+    const labels = llms.flatMap((l) => l.requests.map((r) => r.label));
+    expect(labels.some((l) => /^(personas|voter-profiles)/.test(l))).toBe(
+      false
+    );
+    const [run] = readdirSync(join(root, 'runs'));
+    expect(
+      readFileSync(join(root, 'runs', run!, 'personas.json'), 'utf8')
+    ).toContain('from_file');
+    expect(existsSync(join(seedDir, 'personas', 'seed-1.json'))).toBe(false);
+  });
+
+  it('personas-from-hn writes personas/hn.json into the seed', async () => {
+    const { seedDir } = workspace();
+    const fetchFn: FetchFn = async (url) => ({
+      ok: true,
+      status: 200,
+      json: async () =>
+        url.includes('/items/')
+          ? { author: 'op', children: [{ author: 'someone' }] }
+          : {
+              hits: ['one two', 'three four', 'five six'].map((t) => ({
+                comment_text: t,
+                created_at: '2026-09-01T00:00:00Z'
+              }))
+            }
+    });
+    const makeLlm = () =>
+      new FakeLlm((req) =>
+        req.label.startsWith('hn-persona')
+          ? {
+              segment: 'a',
+              bio: 'b',
+              expertise: [],
+              aiAttitude: 0,
+              verbosity: 2,
+              contrarian: 0.5,
+              activity: 0.5,
+              voiceSample: 'v'
+            }
+          : everything(req)
+      );
+    expect(
+      await main(['personas-from-hn', seedDir, '--threads', '1,2'], {
+        ...deps([]),
+        makeLlm,
+        fetchFn
+      })
+    ).toBe(0);
+    const set = JSON.parse(
+      readFileSync(join(seedDir, 'personas', 'hn.json'), 'utf8')
+    ) as { personas: unknown[] };
+    expect(set.personas).toHaveLength(1);
   });
 
   it('reports usage errors with exit code 2', async () => {

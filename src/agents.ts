@@ -104,7 +104,7 @@ export function agentTurn(
     '- leave: true if you are done with this thread.'
   ].join('\n');
   return llm.call({
-    tier: 'haiku',
+    tier: args.persona.tier ?? 'haiku',
     system: agentSystem(args.persona),
     prompt,
     schema: AGENT_SCHEMA,
