@@ -66,6 +66,23 @@ describe('agentTurn', () => {
     expect(req.prompt).toContain('THREAD-MARKER');
     expect(req.prompt.length).toBeLessThan(CONTEXT_CHARS + 2000);
   });
+
+  it("runs on the persona's tier", async () => {
+    const llm = new FakeLlm(() => ({
+      vote: 'none',
+      upvoteComments: [],
+      comment: null,
+      leave: true
+    }));
+    await agentTurn(llm, {
+      persona: makePersona(1, { tier: 'sonnet' }),
+      post: makePost(),
+      context: '',
+      thread: '',
+      ownComments: []
+    });
+    expect(llm.requests[0]!.tier).toBe('sonnet');
+  });
 });
 
 describe('voterBatch', () => {

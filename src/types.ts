@@ -44,6 +44,10 @@ export interface Persona {
   /** 0..1 chance of engaging when visiting */
   activity: number;
   voiceSample: string;
+  /** Model the persona's turns run on; absent in v1 persona files → haiku. */
+  tier?: Tier;
+  /** HN threads the persona was derived from; never simulate those with it. */
+  sourceThreads?: string[];
 }
 
 export interface Voter {

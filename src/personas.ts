@@ -1,7 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Llm } from './llm.js';
-import type { Persona, PersonaSet, Seed, Segment, Voter } from './types.js';
+import type {
+  Persona,
+  PersonaSet,
+  Seed,
+  Segment,
+  Tier,
+  Voter
+} from './types.js';
 
 const PERSONA_CHUNK = 10;
 const VOTER_CHUNK = 50;
@@ -22,6 +29,16 @@ export function allocate(
     left--;
   }
   return out;
+}
+
+const SONNET_PERCENT = 40;
+
+/** 60% haiku / 40% sonnet, fixed per persona id (FNV-1a) so filtering a set never reshuffles tiers. */
+export function tierFor(id: string): Tier {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++)
+    h = Math.imul(h ^ id.charCodeAt(i), 0x01000193) >>> 0;
+  return h % 100 < SONNET_PERCENT ? 'sonnet' : 'haiku';
 }
 
 const chunks = (n: number, size: number): number[] =>
@@ -207,8 +224,9 @@ export async function generatePersonas(
         r.handle.trim().replace(/\s+/g, '_') || `user${personas.length + 1}`;
       while (handles.has(handle)) handle = `${handle}_${personas.length + 1}`;
       handles.add(handle);
+      const id = `p${personas.length + 1}`;
       personas.push({
-        id: `p${personas.length + 1}`,
+        id,
         segment: seg.id,
         handle,
         bio: r.bio,
@@ -217,7 +235,8 @@ export async function generatePersonas(
         verbosity: clamp(Math.round(r.verbosity), 1, 3),
         contrarian: clamp(r.contrarian, 0, 1),
         activity: clamp(r.activity, 0, 1),
-        voiceSample: r.voiceSample
+        voiceSample: r.voiceSample,
+        tier: tierFor(id)
       });
     }
     for (const oneLiner of lines)
