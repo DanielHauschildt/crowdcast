@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+# Generated output and caches of real HN content — regenerate locally, never commit.
+simulations/runs/
+simulations/compares/
+simulations/backtests/runs/
+simulations/backtests/threads/
+simulations/backtests/personas/
+simulations/backtests/2*/
+simulations/seeds/*/personas/

@@ -41,7 +41,7 @@ export function tvDistance(p: Mix, q: Mix): number {
 function ranks(xs: readonly number[]): number[] {
   const order = xs.map((x, i) => ({ x, i })).sort((a, b) => a.x - b.x);
   const out = new Array<number>(xs.length);
-  for (let s = 0; s < order.length; ) {
+  for (let s = 0; s < order.length;) {
     let e = s;
     while (e + 1 < order.length && order[e + 1]!.x === order[s]!.x) e++;
     for (let k = s; k <= e; k++) out[order[k]!.i] = (s + e) / 2 + 1;

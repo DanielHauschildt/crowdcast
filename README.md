@@ -1,12 +1,12 @@
 # crowdcast
 
 Rehearses a Show HN thread with LLM personas before the real launch. Output is synthetic —
-hypotheses to test, not a forecast. Design: `specs/2026-10-03-crowdcast-design.md`.
+hypotheses to test, not a forecast. Design: `docs/design.md`.
 
 Requires `claude` (Claude Code CLI) on PATH and logged in. Everything else runs locally.
 
 ```bash
-pnpm --filter @imgly/crowdcast build
+pnpm install
 pnpm crowdcast run simulations/seeds/codesign-show-hn --dry-run
 pnpm crowdcast run simulations/seeds/codesign-show-hn
 pnpm crowdcast compare simulations/seeds/codesign-show-hn --variants default,editable-files,local-first --runs 3 --parallel 3

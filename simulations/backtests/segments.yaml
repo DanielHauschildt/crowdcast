@@ -1,0 +1,22 @@
+# General Show HN audience for backtests: no product-specific segments, so the same crowd meets every thread.
+active: 100
+voters: 150
+segments:
+  - id: builders
+    share: 0.25
+    leanings: working software engineers who try new tools; ask how it works, what it is built on, and whether it fits their stack
+  - id: skeptics
+    share: 0.20
+    leanings: senior engineers wary of hype and AI wrappers; "why not X", "this already exists", performance and maintenance questions
+  - id: domain-experts
+    share: 0.15
+    leanings: practitioners of the product's own field (designers, video editors, reverse engineers, CAD users); judge it against the tools they use daily
+  - id: oss-and-business
+    share: 0.15
+    leanings: licence, open source vs closed, pricing, business model, telemetry, lock-in, longevity of the company
+  - id: enthusiasts
+    share: 0.15
+    leanings: curious early adopters; praise what is new, share related projects, request features
+  - id: drive-by
+    share: 0.10
+    leanings: one-liners, jokes, tangents, pedantry about the title or the website

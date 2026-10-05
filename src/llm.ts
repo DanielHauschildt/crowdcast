@@ -13,8 +13,7 @@ export interface LlmRequest<T> {
 }
 
 export type LlmResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: string };
+  { ok: true; value: T } | { ok: false; error: string };
 
 export interface Llm {
   call<T>(req: LlmRequest<T>): Promise<LlmResult<T>>;
@@ -155,7 +154,7 @@ export class ClaudeCli implements Llm {
   async call<T>(req: LlmRequest<T>): Promise<LlmResult<T>> {
     let lastError = 'no attempt';
     let backoffs = 0;
-    for (let attempt = 0; attempt <= this.retries; ) {
+    for (let attempt = 0; attempt <= this.retries;) {
       if (this.callCount >= this.maxCalls)
         throw new BudgetExceeded(`max-calls ${this.maxCalls} reached`);
       this.callCount++;

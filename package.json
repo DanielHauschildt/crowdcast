@@ -15,7 +15,10 @@
     "build": "tsc --build tsconfig.src.json",
     "check": "tsc --build tsconfig.src.json && tsc --build tsconfig.test.json",
     "test": "vitest --run",
-    "test:live": "vitest --run --config vitest.live.config.ts"
+    "test:live": "vitest --run --config vitest.live.config.ts",
+    "lint": "eslint . --ext .ts && prettier --check .",
+    "format": "prettier --write .",
+    "crowdcast": "tsc --build tsconfig.src.json && node dist/cli.js"
   },
   "dependencies": {
     "yaml": "^2.8.0"
@@ -24,6 +27,17 @@
     "@types/node": "^24.3.0",
     "fast-check": "^4.9.0",
     "shx": "^0.4.0",
-    "vitest": "^3.2.0"
+    "vitest": "^3.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.9.2"
+  },
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=22"
   }
 }

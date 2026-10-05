@@ -103,9 +103,11 @@ export async function labelComments(
           ...l,
           sentiment: Math.max(-2, Math.min(2, l.sentiment))
         }));
-      return batch.map(
-        (c): CommentLabel => ({ id: c.id, label: 'other', sentiment: 0 })
-      );
+      return batch.map((c): CommentLabel => ({
+        id: c.id,
+        label: 'other',
+        sentiment: 0
+      }));
     })
   );
   const byId = new Map(results.flat().map((l) => [l.id, l]));

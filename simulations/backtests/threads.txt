@@ -1,0 +1,22 @@
+# Backtest thread set: one HN id per line; '# title, points, comments' (points/comments from the HN items API, 2026-10-04).
+
+# Comparable creative/design and MCP/agent tools
+41853810  # Graphite, a Blender-inspired 2D procedural design Rust app, 785 points, 128 comments
+44127653  # Onlook – Open-source, visual-first Cursor for designers, 408 points, 81 comments
+46917033  # I spent 4 years building a UI design tool with only the features I use, 386 points, 183 comments
+40843867  # I created an After Effects alternative, 1150 points, 253 comments
+46882389  # Ghidra MCP Server – 110 tools for AI-assisted reverse engineering, 298 points, 68 comments
+43532967  # WhatsApp MCP Server, 229 points, 137 comments
+42806616  # Open-source AI video editor, 268 points, 41 comments
+44087049  # SVG Animation Software, 203 points, 74 comments
+49022911  # Palmier Pro – Open-source macOS video editor built for AI, 191 points, 41 comments
+
+# Low performers (Show HN, design/AI/MCP tools, < 20 points, ≥ 5 comments)
+44638842  # AI design agent that creates editable creatives with Canva-like control, 3 points, 10 comments
+47719485  # Figma for Coding Agents, 11 points, 6 comments
+44379227  # MCP Generator for Your API, 17 points, 13 comments
+
+# Proprietary / closed-source dev-tool launches (≥ 30 comments)
+47702196  # CSS Studio. Design by hand, code by agent, 175 points, 107 comments
+41436338  # Repaint – a WebGL based website builder, 236 points, 164 comments
+46591100  # AI in SolidWorks, 191 points, 106 comments
