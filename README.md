@@ -1,7 +1,11 @@
 # crowdcast
 
-Rehearses a Show HN thread with LLM personas before the real launch. Output is synthetic —
-hypotheses to test, not a forecast. Design: `docs/design.md`.
+Rehearses a Show HN thread with LLM personas before the real launch: what people will object
+to, which framing lands, which of your answers help. Output is synthetic — hypotheses to test,
+not a forecast.
+
+**Start here: [docs/guide.md](docs/guide.md)** — purpose, value, and a worked example
+(`examples/show-hn-tablecraft`). Design: `docs/design.md`.
 
 Requires `claude` (Claude Code CLI) on PATH and logged in. Everything else runs locally.
 

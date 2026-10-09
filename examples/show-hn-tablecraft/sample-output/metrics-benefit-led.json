@@ -1,0 +1,143 @@
+{
+  "steps": [
+    {
+      "step": 0,
+      "score": 2.8286885907641337,
+      "band": "top30",
+      "points": 14,
+      "flags": 0
+    },
+    {
+      "step": 1,
+      "score": 5.988586490511245,
+      "band": "top10",
+      "points": 36,
+      "flags": 0
+    },
+    {
+      "step": 2,
+      "score": 8.028043833077778,
+      "band": "top10",
+      "points": 59,
+      "flags": 0
+    },
+    {
+      "step": 3,
+      "score": 8.015235710198171,
+      "band": "top10",
+      "points": 71,
+      "flags": 0
+    },
+    {
+      "step": 4,
+      "score": 7.233903127058009,
+      "band": "top10",
+      "points": 76,
+      "flags": 0
+    },
+    {
+      "step": 5,
+      "score": 6.515070309441165,
+      "band": "top10",
+      "points": 80,
+      "flags": 0
+    }
+  ],
+  "peakBand": "top10",
+  "frontPage": true,
+  "finalPoints": 80,
+  "comments": 51,
+  "founderReplies": 9,
+  "maxDepth": 3,
+  "flagShare": 0,
+  "objectionMix": {
+    "question": 0.3529411764705881,
+    "pricing/licensing": 0.11764705882352941,
+    "trust/telemetry": 0.11764705882352941,
+    "integration-effort": 0.1568627450980392,
+    "other": 0.1764705882352941,
+    "praise": 0.058823529411764705,
+    "vs-design-tools": 0.0196078431372549
+  },
+  "sentimentBySegment": {
+    "data-engineers": {
+      "mean": -0.16666666666666666,
+      "n": 12
+    },
+    "python-loyalists": {
+      "mean": 0.3,
+      "n": 10
+    },
+    "dataviz-practitioners": {
+      "mean": -0.42857142857142855,
+      "n": 7
+    },
+    "rust-and-cli-fans": {
+      "mean": 0.2222222222222222,
+      "n": 9
+    },
+    "oss-and-business": {
+      "mean": 0.3333333333333333,
+      "n": 9
+    },
+    "drive-by": {
+      "mean": 0.25,
+      "n": 4
+    }
+  },
+  "founderEffects": [
+    {
+      "replyId": "c11",
+      "parentId": "c8",
+      "delta": null,
+      "verdict": "no-response"
+    },
+    {
+      "replyId": "c12",
+      "parentId": "c7",
+      "delta": 1.6666666666666665,
+      "verdict": "defused"
+    },
+    {
+      "replyId": "c28",
+      "parentId": "c15",
+      "delta": null,
+      "verdict": "no-response"
+    },
+    {
+      "replyId": "c29",
+      "parentId": "c21",
+      "delta": 0,
+      "verdict": "neutral"
+    },
+    {
+      "replyId": "c43",
+      "parentId": "c34",
+      "delta": null,
+      "verdict": "no-response"
+    },
+    {
+      "replyId": "c52",
+      "parentId": "c9",
+      "delta": null,
+      "verdict": "no-response"
+    },
+    {
+      "replyId": "c56",
+      "parentId": "c31",
+      "delta": null,
+      "verdict": "no-response"
+    },
+    {
+      "replyId": "c60",
+      "parentId": "c10",
+      "delta": null,
+      "verdict": "no-response"
+    }
+  ],
+  "calls": {
+    "total": 123,
+    "failed": 0
+  },
+  "aborted": null
+}

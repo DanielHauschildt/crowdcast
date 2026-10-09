@@ -10,3 +10,6 @@ simulations/backtests/threads/
 simulations/backtests/personas/
 simulations/backtests/2*/
 simulations/seeds/*/personas/
+runs/
+compares/
+examples/*/personas/
