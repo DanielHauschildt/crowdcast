@@ -119,6 +119,26 @@ describe('cli', () => {
     expect(existsSync(join(seedDir, 'personas', 'seed-1.json'))).toBe(true);
   });
 
+  it('takes the platform from platform.yaml, --platform overrides it', async () => {
+    const { seedDir, root } = workspace();
+    writeFileSync(join(seedDir, 'platform.yaml'), 'platform: nope\n');
+    const logs: string[] = [];
+    expect(await main(['run', seedDir, '--no-report'], deps(logs))).toBe(1);
+    expect(logs.join('\n')).toMatch(/unknown platform "nope"; known: hn/);
+    expect(
+      await main(['run', seedDir, '--platform', 'hn', '--no-report'], deps([]))
+    ).toBe(0);
+    const [run] = readdirSync(join(root, 'runs'));
+    const meta = JSON.parse(
+      readFileSync(join(root, 'runs', run!, 'run.json'), 'utf8')
+    ) as { platform: string };
+    expect(meta.platform).toBe('hn');
+    const ends = readFileSync(join(root, 'runs', run!, 'events.jsonl'), 'utf8')
+      .split('\n')
+      .filter((l) => l.includes('"step-end"'));
+    expect(ends).toHaveLength(12);
+  });
+
   it('compare runs every variant 3 times by default and writes compare.md', async () => {
     const { seedDir, root } = workspace();
     const code = await main(
