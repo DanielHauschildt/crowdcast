@@ -38,7 +38,7 @@ export const DEFAULT_REACH: ReachConstants = {
   testSteps: 2,
   expansion: 1.5,
   halfLifeHours: 10,
-  baselineRate: 0.3,
+  baselineRate: 1,
   minGain: 0.1,
   maxGain: 4,
   audiencePool: 250

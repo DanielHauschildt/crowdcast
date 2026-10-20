@@ -12,7 +12,7 @@ analytics.
    is the larger of `author.followers` and `connections` in `platform.yaml` (LinkedIn followers already include
    connections), else 1000.
 2. **Expansion.** From step 2, impressions per step are the test slice × `expansion` (1.5) × gain × ½^(age /
-   `halfLifeHours` (10 h)). Gain is the engagement rate per simulated reader divided by `baselineRate` (0.3),
+   `halfLifeHours` (10 h)). Gain is the engagement rate per simulated reader divided by `baselineRate` (1; simulated agents engage far more than real feed readers),
    clamped to 0.1–4. Engagement: 1 per reaction, 3 per comment, plus 1 per 600 characters of comments (a dwell proxy);
    the founder's replies don't count. Only agents log visits, so readers and their reactions are agents only;
    silent voters' reactions don't drive expansion.
