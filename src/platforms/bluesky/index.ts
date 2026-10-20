@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Platform } from '../../platform.js';
+import type { FetchFn, Platform, RealThread } from '../../platform.js';
 import { liveComments, type ThreadState } from '../../thread.js';
 import { FOUNDER } from '../../types.js';
 import { fetchBskyPost } from './bsky-api.js';
@@ -65,8 +65,8 @@ function reach(
 /** Reads the at-URI of a backtest id from the thread lists. */
 async function fetchReference(
   id: number,
-  fetchFn?: Parameters<typeof fetchBskyPost>[1]
-): ReturnType<NonNullable<Platform['fetchReference']>> {
+  fetchFn?: FetchFn
+): Promise<RealThread> {
   const ref = ['threads.txt', 'holdout.txt']
     .map((f) => join(DATA_DIR, f))
     .filter(existsSync)
