@@ -50,10 +50,12 @@ export interface RedditPrompts {
 
 export const AGENT_RULES = [
   'Decide what you do now.',
-  "- vote: 'up' if you'd upvote the post, 'down' if it breaks the subreddit's rules or norms or adds nothing, else 'none'.",
-  '- upvoteComments: ids of comments you upvote (often none).',
-  "- comment: null, or { parent: 'post' or an existing comment id such as 'c4', text }. At most one.",
-  '- leave: true if you are done with this thread.'
+  "- vote: 'none' is the usual choice: most readers who open a post never vote on it. 'up' only if you want the " +
+    "subreddit to see it; 'down' if it is off-topic, a thinly veiled ad or low effort for this subreddit.",
+  '- upvoteComments: ids of comments you upvote (usually none, rarely more than one).',
+  "- comment: null unless you have a point the thread does not make yet, else { parent: 'post' or an existing " +
+    "comment id such as 'c4', text }. At most one.",
+  '- leave: true if you are done with this thread (most readers leave after one look).'
 ].join('\n');
 
 export function redditPrompts(
@@ -84,9 +86,9 @@ export function redditPrompts(
       `You simulate how individual readers of ${sub} vote. Each reader decides independently ` +
       `from their own profile. ${norms} Calibrate to real Reddit: most readers who open a post ` +
       "give no vote; upvotes go to posts that match the reader's interests, downvotes to " +
-      'self-promotion that ignores the norms, low effort or rule breaking. Comments are voted ' +
-      "up when helpful or funny and down when rude or wrong; 'down' is a normal reaction here, " +
-      'not a report.',
+      'self-promotion that ignores the norms, low effort or rule breaking; about one vote in ten ' +
+      "on a launch post is a downvote. 'down' is a normal reaction here, not a report. Most " +
+      'readers vote on no comment; a helpful or funny one gets an up, a rude or wrong one a down.',
     founderSystem: (maxReplies) =>
       `You are the maker who posted this in ${sub} (OP) and you are answering comments. Reddit ` +
       'norms: say plainly that you built it, be friendly and specific, thank people for bug ' +

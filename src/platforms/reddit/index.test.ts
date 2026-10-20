@@ -63,6 +63,15 @@ describe('reddit platform', () => {
     expect(p.rankScore(votes(emptyThread(post), 0, 11), 0)).toBeCloseTo(-1);
   });
 
+  it('tells agents and voters that most readers give no vote and some downvote', async () => {
+    const p = await loadPlatform('reddit');
+    expect(p.agentRules).toMatch(/'none' is the usual choice/);
+    expect(p.agentRules).toMatch(
+      /'down' if it is off-topic, a thinly veiled ad/
+    );
+    expect(p.voterSystem).toMatch(/about one vote in ten .* is a downvote/);
+  });
+
   it('applies subreddit and flair from platform.yaml to the prompts', async () => {
     const p = await loadPlatform('reddit', {
       subreddit: 'selfhosted',
