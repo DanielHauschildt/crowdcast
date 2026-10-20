@@ -15,6 +15,8 @@ import {
 import type { CliDeps } from '../cli.js';
 import type { FetchFn } from '../hn.js';
 import { loadOrGeneratePersonas } from '../personas.js';
+import type { Platform } from '../platform.js';
+import { DEFAULT_PLATFORM, loadPlatform } from '../platforms/index.js';
 import {
   aggregate,
   historyRow,
@@ -26,12 +28,24 @@ import {
 import { parseSegments } from '../seed.js';
 import type { Seed } from '../types.js';
 
-export const BACKTEST_USAGE = `  crowdcast backtest [<hn-id>…] [--threads simulations/backtests/threads.txt] [--set train|holdout|all]
-                     [--sample N] [--limit N] [--steps 6] [--parallel 3] [--seed 1] [--concurrency 4]
-                     [--max-calls 400] [--note "…"]`;
+export const BACKTEST_USAGE = `  crowdcast backtest [<id>…] [--platform hn] [--threads simulations/backtests[/<platform>]/threads.txt]
+                     [--set train|holdout|all] [--sample N] [--limit N] [--steps 6] [--parallel 3] [--seed 1]
+                     [--concurrency 4] [--max-calls 400] [--note "…"]`;
+
+/** HN's lists predate platforms and stay at the top; other platforms get a folder each. */
+export const defaultThreadsFile = (platform: string): string =>
+  platform === DEFAULT_PLATFORM
+    ? 'simulations/backtests/threads.txt'
+    : `simulations/backtests/${platform}/threads.txt`;
+
+type Deps = CliDeps & {
+  fetch?: FetchFn;
+  loadPlatform?: (id: string) => Promise<Platform>;
+};
 
 const OPTIONS = {
-  threads: { type: 'string', default: 'simulations/backtests/threads.txt' },
+  platform: { type: 'string', default: DEFAULT_PLATFORM },
+  threads: { type: 'string' },
   set: { type: 'string', default: 'train' },
   sample: { type: 'string' },
   limit: { type: 'string' },
@@ -61,10 +75,7 @@ async function pool<T>(
   );
 }
 
-export async function backtest(
-  argv: string[],
-  deps: CliDeps & { fetch?: FetchFn }
-): Promise<number> {
+export async function backtest(argv: string[], deps: Deps): Promise<number> {
   let v;
   let positionals;
   try {
@@ -92,9 +103,10 @@ type Values = ReturnType<
 async function runBacktest(
   v: Values,
   positionals: string[],
-  deps: CliDeps & { fetch?: FetchFn }
+  deps: Deps
 ): Promise<number> {
-  const threadsFile = resolve(v.threads);
+  const platform = await (deps.loadPlatform ?? loadPlatform)(v.platform);
+  const threadsFile = resolve(v.threads ?? defaultThreadsFile(platform.id));
   const root = dirname(threadsFile);
   const holdout = join(root, 'holdout.txt');
   const files: Partial<Record<string, string[]>> = {
@@ -128,7 +140,7 @@ async function runBacktest(
           { sample, limit, seed: rngSeed }
         );
   if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || id <= 0)) {
-    deps.log(`backtest: no valid HN ids\nusage:\n${BACKTEST_USAGE}`);
+    deps.log(`backtest: no valid thread ids\nusage:\n${BACKTEST_USAGE}`);
     return 2;
   }
   const steps = Number(v.steps);
@@ -147,7 +159,8 @@ async function runBacktest(
   const personas = await loadOrGeneratePersonas(
     deps.makeLlm({ concurrency }),
     audience,
-    join(root, 'personas', `seed-${rngSeed}.json`)
+    join(root, 'personas', `seed-${rngSeed}.json`),
+    platform
   );
   const stamp = stampOf(deps.now());
   deps.log(
@@ -158,8 +171,12 @@ async function runBacktest(
   await pool(ids, Number(v.parallel), async (id) => {
     try {
       const threadDir = join(root, 'threads', String(id));
-      const real = await loadOrFetchThread(threadDir, id, deps.fetch);
-      const runDir = join(root, 'runs', `${stamp}-hn${id}-s${rngSeed}`);
+      const real = await loadOrFetchThread(threadDir, id, deps.fetch, platform);
+      const runDir = join(
+        root,
+        'runs',
+        `${stamp}-${platform.id}${id}-s${rngSeed}`
+      );
       mkdirSync(runDir, { recursive: true });
       const s = await backtestThread({
         llm: deps.makeLlm({
@@ -170,10 +187,11 @@ async function runBacktest(
         real,
         threadDir,
         runDir,
-        seed: { ...audience, name: `hn-${id}`, dir: threadDir },
+        seed: { ...audience, name: `${platform.id}-${id}`, dir: threadDir },
         personas,
         steps,
-        rngSeed
+        rngSeed,
+        platform
       });
       scores.set(id, s);
       deps.log(
@@ -191,7 +209,7 @@ async function runBacktest(
     return 1;
   }
   const agg = aggregate(ordered, rngSeed);
-  const meta = { stamp, steps, seed: rngSeed, set };
+  const meta = { stamp, steps, seed: rngSeed, set, platform: platform.id };
   const outDir = join(root, stamp);
   mkdirSync(outDir, { recursive: true });
   writeFileSync(

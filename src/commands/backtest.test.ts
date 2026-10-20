@@ -13,8 +13,10 @@ import { personaHandler } from '../../test/fixtures.js';
 import { main } from '../cli.js';
 import type { FetchFn } from '../hn.js';
 import { FakeLlm, type LlmRequest } from '../llm.js';
+import type { Platform } from '../platform.js';
+import hn from '../platforms/hn/index.js';
 import { selectIds } from '../scorecard.js';
-import { backtest } from './backtest.js';
+import { backtest, defaultThreadsFile } from './backtest.js';
 
 function workspace(): string {
   const root = join(mkdtempSync(join(tmpdir(), 'bt-')), 'backtests');
@@ -203,6 +205,61 @@ describe('backtest thread sets', () => {
     const root = workspace();
     expect(await run(root, '--set', 'dev')).toBe(2);
     expect(await run(root, '--sample', '0')).toBe(2);
+  });
+});
+
+describe('backtest --platform', () => {
+  it('defaults to hn and keeps HN lists at the top of simulations/backtests', () => {
+    expect(defaultThreadsFile('hn')).toBe('simulations/backtests/threads.txt');
+    expect(defaultThreadsFile('bluesky')).toBe(
+      'simulations/backtests/bluesky/threads.txt'
+    );
+  });
+
+  it('loads the platform and fetches its reference threads through it', async () => {
+    const root = workspace();
+    const loaded: string[] = [];
+    const fetched: number[] = [];
+    // The core reloads the platform by id when it writes the report, so the double keeps a real id.
+    const traced: Platform = {
+      ...hn,
+      fetchReference: (id, f) => {
+        fetched.push(id);
+        return hn.fetchReference!(id, f);
+      }
+    };
+    const code = await backtest(
+      [
+        '--platform',
+        'hn',
+        '--threads',
+        join(root, 'threads.txt'),
+        '--steps',
+        '1'
+      ],
+      {
+        ...deps([]),
+        loadPlatform: async (id: string) => {
+          loaded.push(id);
+          return traced;
+        }
+      }
+    );
+    expect(code).toBe(0);
+    expect(loaded).toEqual(['hn']);
+    expect(fetched.sort()).toEqual([1, 2, 3]);
+  });
+
+  it('exits 1 naming the known platforms for an unknown id', async () => {
+    const root = workspace();
+    const logs: string[] = [];
+    expect(
+      await backtest(
+        ['--platform', 'nope', '--threads', join(root, 'threads.txt')],
+        deps(logs)
+      )
+    ).toBe(1);
+    expect(logs.join('\n')).toMatch(/unknown platform "nope".*hn/);
   });
 });
 

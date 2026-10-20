@@ -26,6 +26,9 @@ pnpm crowdcast backtest --set holdout                     # the number to report
 pnpm crowdcast backtest --set all --limit 5               # first 5 ids of train followed by holdout
 ```
 
+`--platform <id>` (default `hn`) backtests another platform: its lists, `segments.yaml`, cache and history live in
+`simulations/backtests/<id>/`, the same layout as here; HN keeps this folder.
+
 `--sample N` picks N ids at random from the set, `--limit N` keeps the first N after that. The sample uses `--seed`, which
 also seeds the personas and the simulation, so the same seed gives the same subset. Ids given as positionals ignore
 `--set` and are recorded as set `ids`.

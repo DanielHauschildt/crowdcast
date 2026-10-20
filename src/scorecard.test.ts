@@ -224,6 +224,15 @@ describe('scorecardMarkdown', () => {
         set: 'train'
       })
     ).toContain('points @ 0.7h');
+    expect(
+      scorecardMarkdown(scores, aggregate(scores), {
+        stamp: 'x',
+        steps: 2,
+        seed: 1,
+        set: 'train',
+        platform: 'bluesky'
+      })
+    ).toContain('2 real bluesky threads (train set)');
   });
 });
 

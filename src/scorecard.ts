@@ -144,6 +144,8 @@ export interface ScorecardMeta {
   seed: number;
   /** `train`, `holdout`, `all`, or `ids` for ids given on the command line. */
   set: string;
+  /** Default: hn. */
+  platform?: string;
 }
 
 export function scorecardMarkdown(
@@ -157,7 +159,7 @@ export function scorecardMarkdown(
     '',
     `# Backtest scorecard ${meta.stamp}`,
     '',
-    `${scores.length} real Show HN threads (${meta.set} set), each simulated from its post alone · ${meta.steps} steps (${h}) · seed ${meta.seed}. ` +
+    `${scores.length} real ${!meta.platform || meta.platform === 'hn' ? 'Show HN' : meta.platform} threads (${meta.set} set), each simulated from its post alone · ${meta.steps} steps (${h}) · seed ${meta.seed}. ` +
       `Simulated points @ ${h} are ranked against real final points (order, not absolute).`,
     '',
     '## Aggregate',
