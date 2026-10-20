@@ -34,6 +34,17 @@ pnpm crowdcast backtest --set all --limit 5               # first 5 ids of train
 also seeds the personas and the simulation, so the same seed gives the same subset. Ids given as positionals ignore
 `--set` and are recorded as set `ids`.
 
+## Truncated and skipped threads
+
+The simulation gets `--max-calls − --score-reserve` calls per thread (default 400 − 30; 30 covers scoring a thread with
+60 real and 60 simulated comments, with retries). A step that would overrun this share is not started. The run ends
+there and is still scored: its row is marked `†` with the step it stopped at, and `truncatedAtStep` is saved in
+`run.json` and `score.json`. Its simulated points and comments are compared with the real *final* values, because there
+is no real timeline at that age, so a † row's ratio is biased low. Truncated threads count in every aggregate, and the
+Completed cell shows how many there were (`12 (2†, 1 skipped)`). A thread with fewer than `--min-real-comments`
+(default 3) non-OP comments is skipped before simulating and costs no calls. It is listed as `skipped: N real replies`
+and left out of the numbers.
+
 ## Reading the intervals
 
 The scorecard and each history row show recall, objection-mix TV and the comment ratio as a mean with a bootstrap 90%

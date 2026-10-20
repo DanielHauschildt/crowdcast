@@ -76,6 +76,12 @@ sentiment gap, with bootstrap 90% intervals; each run appends one row to
 `simulations/backtests[/<platform>]/history.md`, so a calibration change is kept only if the aggregate improves
 (`--note` labels the row).
 
+Each thread gets `--max-calls` calls (default 400), of which `--score-reserve` (default 30) are kept for scoring. When the
+simulation would overrun its share it stops before the next step, and the thread is still scored on what it produced.
+The scorecard marks it `†` (status: truncated at step N), and the Completed count shows `(k†)`. Threads with fewer than
+`--min-real-comments` (default 3) real replies are skipped without a call (`skipped: 0 real replies`). If theme extraction
+fails on a thread, its recall is n/a and the thread is still scored.
+
 ## Track
 
 `track` polls the HN Firebase API for live Show HN stories (ids, points, comments, rank; no text) into
