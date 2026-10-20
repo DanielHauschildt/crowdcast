@@ -124,7 +124,7 @@ describe('cli', () => {
     writeFileSync(join(seedDir, 'platform.yaml'), 'platform: nope\n');
     const logs: string[] = [];
     expect(await main(['run', seedDir, '--no-report'], deps(logs))).toBe(1);
-    expect(logs.join('\n')).toMatch(/unknown platform "nope"; known: hn/);
+    expect(logs.join('\n')).toMatch(/unknown platform "nope"; known: .*\bhn\b/);
     expect(
       await main(['run', seedDir, '--platform', 'hn', '--no-report'], deps([]))
     ).toBe(0);
