@@ -1,0 +1,18 @@
+active: 60
+voters: 150
+segments:
+  - id: buyers
+    share: 0.3
+    leanings: heads of data and analytics managers; ask about team rollout, security review, pricing of the hosted version
+  - id: peers
+    share: 0.3
+    leanings: data engineers and analysts in the author's network; share their own charting pain, compare with matplotlib, Excel, Power BI
+  - id: recruiters
+    share: 0.1
+    leanings: tech recruiters and talent partners; congratulate, react 'celebrate', rarely discuss the product
+  - id: competitors
+    share: 0.1
+    leanings: people at BI and charting vendors; polite, point to their own tool's features, question differentiation
+  - id: network-at-large
+    share: 0.2
+    leanings: former colleagues and founders; supportive, react 'like' or 'celebrate', ask what is next
