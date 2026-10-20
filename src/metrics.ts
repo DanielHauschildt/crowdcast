@@ -2,13 +2,7 @@ import type { CommentLabel, Label } from './label.js';
 import type { Platform } from './platform.js';
 import hn from './platforms/hn/index.js';
 import { replay, type ThreadState } from './thread.js';
-import {
-  FOUNDER,
-  type Band,
-  type PersonaSet,
-  type Post,
-  type SimEvent
-} from './types.js';
+import { FOUNDER, type PersonaSet, type Post, type SimEvent } from './types.js';
 
 export interface FounderEffect {
   replyId: string;
@@ -21,11 +15,11 @@ export interface Metrics {
   steps: Array<{
     step: number;
     score: number;
-    band: Band;
+    band: string;
     points: number;
     flags: number;
   }>;
-  peakBand: Band;
+  peakBand: string;
   frontPage: boolean;
   finalPoints: number;
   comments: number;
@@ -112,8 +106,8 @@ export function computeMetrics(
       return { replyId: reply.id, parentId: reply.parent, delta, verdict };
     });
 
-  const rank = (b: Band): number => platform.bands.indexOf(b);
-  const peakBand = ends.reduce<Band>(
+  const rank = (b: string): number => platform.bands.indexOf(b);
+  const peakBand = ends.reduce(
     (best, e) => (rank(e.band) < rank(best) ? e.band : best),
     platform.bands.at(-1)!
   );

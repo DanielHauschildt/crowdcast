@@ -3,8 +3,8 @@ import type { Author } from './platform.js';
 /** A reaction from the platform's `votes`; 'none' is no reaction (HN: up, none, flag). */
 export type Vote = string;
 export type Tier = 'haiku' | 'sonnet' | 'opus';
-/** A visibility band from the platform's `bands` (HN: top10, top30, page2, new). */
-export type Band = string;
+/** HN's visibility bands; other platforms name their own (`Platform.bands`). */
+export type Band = 'top10' | 'top30' | 'page2' | 'new';
 
 /** Author id of the person who submitted the post and answers in the thread. */
 export const FOUNDER = 'founder';
@@ -94,7 +94,7 @@ export type SimEvent =
       kind: 'step-end';
       step: number;
       score: number;
-      band: Band;
+      band: string;
       points: number;
       flags: number;
       calls: number;

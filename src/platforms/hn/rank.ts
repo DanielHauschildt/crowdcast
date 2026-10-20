@@ -1,7 +1,7 @@
+import type { Band } from '../../types.js';
+
 export const STEP_MINUTES = 20;
 export const DEFAULT_STEPS = 12;
-
-export type HnBand = 'top10' | 'top30' | 'page2' | 'new';
 
 /**
  * rankScore cut-offs for each band. Calibrated by hand against the HN formula: a post with
@@ -9,9 +9,9 @@ export type HnBand = 'top10' | 'top30' | 'page2' | 'new';
  * Crude on purpose — the sim predicts relative, not absolute, rank.
  */
 export const BAND_THRESHOLDS = { top10: 3.0, top30: 1.0, page2: 0.4 } as const;
-export const BAND_ORDER: readonly HnBand[] = ['top10', 'top30', 'page2', 'new'];
+export const BAND_ORDER: readonly Band[] = ['top10', 'top30', 'page2', 'new'];
 
-export function bandFor(score: number): HnBand {
+export function bandFor(score: number): Band {
   if (score >= BAND_THRESHOLDS.top10) return 'top10';
   if (score >= BAND_THRESHOLDS.top30) return 'top30';
   if (score >= BAND_THRESHOLDS.page2) return 'page2';
@@ -19,7 +19,7 @@ export function bandFor(score: number): HnBand {
 }
 
 /** Share of the population that opens the thread during one step in this band. */
-export function visitorFraction(band: HnBand, step: number): number {
+export function visitorFraction(band: Band, step: number): number {
   switch (band) {
     case 'top10':
       return 1;
