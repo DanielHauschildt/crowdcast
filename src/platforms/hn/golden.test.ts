@@ -14,12 +14,11 @@ import {
 import { backtestThread } from '../../backtest.js';
 import { runSimulation } from '../../engine.js';
 import { readEvents } from '../../events.js';
-import type { RealThread } from '../../hn.js';
 import { interview } from '../../interview.js';
 import { LABELS } from '../../label.js';
 import { FakeLlm, type LlmRequest } from '../../llm.js';
 import { generatePersonas } from '../../personas.js';
-import type { Platform } from '../../platform.js';
+import type { Platform, RealThread } from '../../platform.js';
 import {
   PERSONAS_FILE,
   RUN_FILE,
