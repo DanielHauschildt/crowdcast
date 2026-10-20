@@ -10,6 +10,8 @@ export type FetchFn = (
 export interface Author {
   followers: number;
   audience?: string;
+  /** First-degree connections (LinkedIn). */
+  connections?: number;
 }
 
 export interface Visibility {
@@ -40,6 +42,8 @@ export interface RealThread {
   op: string;
   /** Linked page as plain text, else the post text. */
   context: string;
+  /** The poster where the platform exposes it (e.g. Bluesky followers). */
+  author?: Author;
 }
 
 /**
@@ -60,7 +64,7 @@ export interface Platform {
   commentVote: string;
   visibility(state: ThreadState, step: number, author?: Author): Visibility;
   /** The post's ranking score at `ageHours`, recorded at each step end. */
-  rankScore(state: ThreadState, ageHours: number): number;
+  rankScore(state: ThreadState, ageHours: number, author?: Author): number;
 
   agentSystem(persona: Persona): string;
   /** The action wording that closes every agent prompt. */
@@ -80,6 +84,8 @@ export interface Platform {
   recallSystem: string;
 
   fetchReference?(id: number, fetchFn?: FetchFn): Promise<RealThread>;
-  /** Applies the extra keys of a seed's platform.yaml. */
-  withOptions?(options: Record<string, unknown>): Platform;
+  /** Applies the extra keys of a seed's platform.yaml and binds its author (e.g. for prompts). */
+  withOptions?(options: Record<string, unknown>, author?: Author): Platform;
+  /** `crowdcast fit <platform> <file>`: fits reach constants to real data; returns a printable summary. */
+  fit?(file: string, author?: Author, fetchFn?: FetchFn): Promise<string>;
 }

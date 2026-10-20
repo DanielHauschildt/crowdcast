@@ -63,7 +63,7 @@ export function parseSegments(text: string): {
   return { active, voters, segments };
 }
 
-/** platform.yaml: `platform`, optional `author: {followers, audience}`, other keys → options. */
+/** platform.yaml: `platform`, optional `author: {followers, audience, connections}`, other keys → options. */
 export function parsePlatformFile(text: string): Pick<Seed, 'author'> & {
   platform: string;
   options: Record<string, unknown>;
@@ -78,7 +78,10 @@ export function parsePlatformFile(text: string): Pick<Seed, 'author'> & {
   const id = platform ?? DEFAULT_PLATFORM;
   if (typeof id !== 'string') return fail('"platform" must be a string');
   if (author === undefined) return { platform: id, options };
-  const { followers, audience } = (author ?? {}) as Record<string, unknown>;
+  const { followers, audience, connections } = (author ?? {}) as Record<
+    string,
+    unknown
+  >;
   if (
     typeof followers !== 'number' ||
     !Number.isInteger(followers) ||
@@ -87,11 +90,23 @@ export function parsePlatformFile(text: string): Pick<Seed, 'author'> & {
     fail('"author.followers" must be an integer ≥ 0');
   if (audience !== undefined && typeof audience !== 'string')
     fail('"author.audience" must be a string');
+  if (
+    connections !== undefined &&
+    !(
+      typeof connections === 'number' &&
+      Number.isInteger(connections) &&
+      connections >= 0
+    )
+  )
+    fail('"author.connections" must be an integer ≥ 0');
   return {
     platform: id,
     author: {
       followers: followers as number,
-      ...(audience === undefined ? {} : { audience: audience as string })
+      ...(audience === undefined ? {} : { audience: audience as string }),
+      ...(connections === undefined
+        ? {}
+        : { connections: connections as number })
     },
     options
   };

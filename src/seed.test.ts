@@ -95,6 +95,17 @@ describe('loadSeed', () => {
     ).toThrow(/platform\.yaml.*followers/);
   });
 
+  it('reads author.connections and rejects a bad one', () => {
+    const yaml = (c: string): string =>
+      `platform: linkedin\nauthor:\n  followers: 1800\n  connections: ${c}\n`;
+    expect(
+      loadSeed(seedDir({ ...base, 'platform.yaml': yaml('1200') })).author
+    ).toEqual({ followers: 1800, connections: 1200 });
+    expect(() =>
+      loadSeed(seedDir({ ...base, 'platform.yaml': yaml('-1') }))
+    ).toThrow(/platform\.yaml.*author\.connections/);
+  });
+
   it('rejects shares that do not sum to 1', () => {
     const dir = seedDir({
       ...base,
