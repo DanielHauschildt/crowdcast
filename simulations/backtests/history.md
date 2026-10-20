@@ -8,3 +8,4 @@
 | 20261004-0737 | 6 | 2 | 10 | 28% | 0.46 | 0.81 | 0.51 | -0.25 | round 2: 100 active personas (seed 2, fresh persona set) | – | train | 10 |
 | 20261004-0940 | 6 | 2 | 5 | 32% | 0.60 | 0.90 | 4.22 | -0.71 | round 2 completion: 5 threads cut off by session limit | – | train | 5 |
 | 20261004-round2-combined | 6 | 2 | 15 | 29% | 0.51 | 0.77 | 0.69 | -0.40 | round 2 combined: 0737 (10 ok) + 0940 (5 rerun) | – | train | 15 |
+| 20261020-1913 | 6 | 7 | 2 | 0% [0%–0%] | 0.53 [0.45–0.62] | – | 11.29 | -0.90 | baseline: integration 805f08e (sample 10 seed 7, first 5) | 7.75 [3.08–19.50] | train | 5 |
