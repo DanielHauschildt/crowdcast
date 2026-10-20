@@ -164,6 +164,7 @@ export async function fetchBskyPost(
     comments,
     points: 1 + (post.likeCount ?? 0) + (post.repostCount ?? 0),
     op: did,
+    author: { followers: profile.followersCount ?? 0 },
     context: ext
       ? `${text}\n\nLinked: ${ext.title} — ${ext.description} (${ext.uri})`
       : text

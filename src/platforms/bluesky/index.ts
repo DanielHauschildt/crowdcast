@@ -97,9 +97,8 @@ export function makeBluesky(o: BlueskyOptions): Platform {
       );
       return { band: bandFor(f), visitorFraction: f };
     },
-    // rankScore gets no author: it charts reach at the reference posts' median followers.
-    rankScore: (state, ageHours) =>
-      reach(o, state, ageHours, o.authorFollowers),
+    rankScore: (state, ageHours, author) =>
+      reach(o, state, ageHours, author?.followers ?? o.authorFollowers),
     agentSystem,
     agentRules: AGENT_RULES,
     voterSystem: VOTER_SYSTEM,

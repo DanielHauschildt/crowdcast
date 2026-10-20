@@ -89,7 +89,7 @@ type Values = ReturnType<
 >['values'];
 
 const seedPlatform = (seed: Seed, v: Values): Promise<Platform> =>
-  loadPlatform(v.platform ?? seed.platform, seed.options);
+  loadPlatform(v.platform ?? seed.platform, seed.options, seed.author);
 
 async function loadPersonas(
   deps: CliDeps,
@@ -138,6 +138,8 @@ async function runOne(
   mkdirSync(runDir, { recursive: true });
   const meta: RunMeta = {
     platform: platform.id,
+    ...(seed.author ? { author: seed.author } : {}),
+    options: seed.options ?? {},
     seedName: seed.name,
     variant,
     rngSeed: rngSeed + index - 1,

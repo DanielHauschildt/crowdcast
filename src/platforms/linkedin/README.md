@@ -33,8 +33,7 @@ headline: Founder at Tablecraft # optional; how prompts name the author
 testSlice: 0.05 # optional reach constants: testSlice, expansion, halfLifeHours, audiencePool
 ```
 
-`run.json` does not keep these keys yet, so report and interview reload the defaults (prompts only; reach is used
-during the run).
+`run.json` keeps these keys and the author, so report and interview reload them.
 
 ## Fitting to your own post analytics
 

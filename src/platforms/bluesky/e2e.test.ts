@@ -8,7 +8,9 @@ import {
   makeSeed,
   makeVoter
 } from '../../../test/fixtures.js';
+import { backtestThread } from '../../backtest.js';
 import { runSimulation } from '../../engine.js';
+import { readEvents } from '../../events.js';
 import { FakeLlm, type LlmRequest } from '../../llm.js';
 import type { Metrics } from '../../metrics.js';
 import {
@@ -17,7 +19,8 @@ import {
   writeReport,
   type RunMeta
 } from '../../report.js';
-import type { PersonaSet } from '../../types.js';
+import type { RealThread } from '../../platform.js';
+import type { PersonaSet, SimEvent } from '../../types.js';
 import { loadPlatform } from '../index.js';
 import { QUOTE_PREFIX } from './prompts.js';
 
@@ -62,6 +65,8 @@ function world(req: LlmRequest<unknown>): unknown {
       }))
     };
   }
+  if (req.label === 'themes') return { themes: ['speed'] };
+  if (req.label === 'theme-recall') return { raised: [false] };
   if (req.label === 'report')
     return {
       topObjections: 'None raised [c1].',
@@ -113,5 +118,47 @@ describe('a Bluesky run end to end', () => {
     for (const s of m.steps) expect(platform.bands).toContain(s.band);
     expect(m.frontPage).toBe(['viral', 'spreading'].includes(m.peakBand));
     expect(m.objectionMix.praise).toBeGreaterThan(0);
+  });
+});
+
+describe('a Bluesky backtest', () => {
+  const real = (followers?: number): RealThread => ({
+    id: 7,
+    post: makePost({ title: 'Gridline 1.0 is out' }),
+    comments: [],
+    points: 40,
+    op: 'did:plc:maker',
+    context: 'Tables, fast.',
+    ...(followers === undefined ? {} : { author: { followers } })
+  });
+  const stepEnds = async (
+    followers?: number
+  ): Promise<Array<Extract<SimEvent, { kind: 'step-end' }>>> => {
+    const root = mkdtempSync(join(tmpdir(), 'bsky-bt-'));
+    await backtestThread({
+      llm: new FakeLlm(world),
+      real: real(followers),
+      threadDir: join(root, 'thread'),
+      runDir: join(root, 'run'),
+      seed: makeSeed({ name: 'bluesky-7' }),
+      personas,
+      steps: 2,
+      rngSeed: 1,
+      platform: await loadPlatform('bluesky')
+    });
+    const meta = JSON.parse(
+      readFileSync(join(root, 'run', RUN_FILE), 'utf8')
+    ) as RunMeta;
+    expect(meta.author).toEqual(real(followers).author);
+    return readEvents(join(root, 'run', 'events.jsonl')).filter(
+      (e) => e.kind === 'step-end'
+    );
+  };
+
+  it("uses the real thread's followers for visibility and the charted score", async () => {
+    const [big, median] = [await stepEnds(500_000), await stepEnds()];
+    expect(big[0]!.band).toBe('viral');
+    expect(median[0]!.band).not.toBe('viral');
+    expect(big[0]!.score).toBeGreaterThan(median[0]!.score);
   });
 });

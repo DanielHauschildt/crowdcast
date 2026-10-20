@@ -65,11 +65,10 @@ export function makeLinkedin(o: LinkedinOptions): Platform {
       );
       return { band, visitorFraction };
     },
-    // rankScore gets no author: it charts impressions per step for the default network.
-    rankScore: (state, ageHours) =>
+    rankScore: (state, ageHours, author) =>
       reachAt(
         o.reach,
-        network(),
+        network(author?.followers),
         state,
         Math.floor((ageHours * 60) / STEP_MINUTES)
       ).impressions,

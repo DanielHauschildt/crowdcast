@@ -128,6 +128,7 @@ describe('fetchBskyPost', () => {
     expect(thread.post.title).toBe('Introducing Gridline 1.0');
     expect(thread.post.url).toBe('https://gridline.example');
     expect(thread.points).toBe(1 + 3 + 2);
+    expect(thread.author).toEqual({ followers: 2000 });
     expect(thread.context).toContain('Tables, fast.');
     expect(
       thread.comments.map((c) => [c.id, c.parent, c.author, c.text])

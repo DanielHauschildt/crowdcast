@@ -279,6 +279,7 @@ export async function backtestThread(
   mkdirSync(a.threadDir, { recursive: true });
   const meta: RunMeta = {
     platform: platform.id,
+    ...(real.author ? { author: real.author } : {}),
     seedName: seed.name,
     variant: 'backtest',
     rngSeed: a.rngSeed,
@@ -301,7 +302,8 @@ export async function backtestThread(
     rngSeed: a.rngSeed,
     runDir: a.runDir,
     steps: a.steps,
-    platform
+    platform,
+    author: real.author
   });
   const simLabels = await ensureLabels(llm, a.runDir);
   const metrics = computeMetrics(res.events, simLabels, a.personas, platform);

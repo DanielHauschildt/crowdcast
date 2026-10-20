@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Platform } from '../platform.js';
+import type { Author, Platform } from '../platform.js';
 
 export const DEFAULT_PLATFORM = 'hn';
 
@@ -14,10 +14,11 @@ export function knownPlatforms(): string[] {
     .sort();
 }
 
-/** `src/platforms/<id>/index.ts`'s default export, with a seed's extra platform.yaml keys applied. */
+/** `src/platforms/<id>/index.ts`'s default export, with a seed's extra platform.yaml keys and author applied. */
 export async function loadPlatform(
   id: string = DEFAULT_PLATFORM,
-  options: Record<string, unknown> = {}
+  options: Record<string, unknown> = {},
+  author?: Author
 ): Promise<Platform> {
   // Check the folder first so a bug inside a platform module is not reported as an unknown id.
   if (!/^[a-z0-9-]+$/.test(id) || !existsSync(join(here, id)))
@@ -29,7 +30,7 @@ export async function loadPlatform(
       default: Platform;
     }
   ).default;
-  return Object.keys(options).length > 0 && p.withOptions
-    ? p.withOptions(options)
+  return (Object.keys(options).length > 0 || author) && p.withOptions
+    ? p.withOptions(options, author)
     : p;
 }

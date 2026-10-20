@@ -196,7 +196,9 @@ describe('linkedin end to end', () => {
     const dir = join(root, 'runs', run!);
     const read = (f: string): string => readFileSync(join(dir, f), 'utf8');
     expect(JSON.parse(read('run.json'))).toMatchObject({
-      platform: 'linkedin'
+      platform: 'linkedin',
+      author: { followers: 4000 },
+      options: { headline: 'Data lead at Acme' }
     });
     const prompts = llms.flatMap((l) => l.requests.map((r) => r.system));
     expect(prompts.some((s) => s.includes('Data lead at Acme'))).toBe(true);

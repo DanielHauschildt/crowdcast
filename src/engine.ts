@@ -261,7 +261,8 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
       step,
       score: platform.rankScore(
         state,
-        ageHours(step + 1, platform.stepMinutes)
+        ageHours(step + 1, platform.stepMinutes),
+        author
       ),
       band: platform.visibility(state, step + 1, author).band,
       points: postPoints(state),

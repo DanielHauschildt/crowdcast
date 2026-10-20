@@ -4,7 +4,7 @@ import { EVENTS_FILE, readEvents } from './events.js';
 import { labelComments, type CommentLabel } from './label.js';
 import type { Llm } from './llm.js';
 import { computeMetrics, type Metrics } from './metrics.js';
-import type { Platform } from './platform.js';
+import type { Author, Platform } from './platform.js';
 import { loadPlatform } from './platforms/index.js';
 import { renderThread, replay } from './thread.js';
 import { FOUNDER, type PersonaSet, type Post, type SimEvent } from './types.js';
@@ -21,6 +21,9 @@ export const PERSONAS_FILE = 'personas.json';
 export interface RunMeta {
   /** Absent in runs from before platforms → hn. */
   platform?: string;
+  /** platform.yaml's author and extra keys; absent in older runs → the platform's defaults. */
+  author?: Author;
+  options?: Record<string, unknown>;
   seedName: string;
   variant: string;
   rngSeed: number;
@@ -85,7 +88,7 @@ export function loadRun(runDir: string): {
 }
 
 export const runPlatform = (meta: RunMeta): Promise<Platform> =>
-  loadPlatform(meta.platform);
+  loadPlatform(meta.platform, meta.options, meta.author);
 
 export async function ensureLabels(
   llm: Llm,

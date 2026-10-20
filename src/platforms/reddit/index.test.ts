@@ -184,7 +184,10 @@ describe('reddit end to end', () => {
     expect(count('down')).toBeGreaterThan(0);
     expect(m.finalPoints).toBe(1 + count('up') - count('down'));
     expect(read('thread.md')).toMatch(/\[c1\] p\d+ · -\d+ points/);
-    // Known gap: run.json does not keep platform.yaml options, so the report reloads the default subreddit.
-    expect(read('report.md')).toContain('# r/SideProject rehearsal:');
+    expect(JSON.parse(read('run.json'))).toMatchObject({
+      options: { subreddit: 'selfhosted' }
+    });
+    // The report reloads the run's platform.yaml options.
+    expect(read('report.md')).toContain('# r/selfhosted rehearsal:');
   });
 });
