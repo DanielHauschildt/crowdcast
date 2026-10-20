@@ -103,6 +103,12 @@ describe('bluesky visibility', () => {
     expect(v).toEqual({ band: 'viral', visitorFraction: 1 });
   });
 
+  it('shows a median author to a tenth of the crowd in the first step', () => {
+    const v = bluesky.visibility(thread([]), 0);
+    expect(v.band).toBe('followers');
+    expect(v.visitorFraction).toBeGreaterThan(0.1);
+  });
+
   it('falls back to the reference median followers without an author', () => {
     expect(f(thread([]), 0)).toBeLessThan(
       pool.visibility(thread([]), 0).visitorFraction

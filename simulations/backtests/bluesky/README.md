@@ -7,7 +7,8 @@
   followers). Gitignored: it holds real handles and text.
 - `fit.json`: reach constants fitted on the train list's likes in the first 4 hours (16 × 15-min steps);
   `src/platforms/bluesky/index.ts` reads them as defaults. Refit with `pnpm crowdcast fit bluesky simulations/backtests/bluesky/threads.txt`.
-- `segments.yaml`: the backtest crowd (100 active + 150 voters = the platform's default `audiencePool`).
+- `segments.yaml`: the backtest crowd (100 active + 150 voters). The platform's default `audiencePool` (75) is
+  calibrated against it in `history.md`.
 
 Run a backtest: `pnpm crowdcast backtest --platform bluesky --limit 2 --steps 2`.
 

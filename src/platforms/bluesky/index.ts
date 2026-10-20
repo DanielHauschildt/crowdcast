@@ -31,13 +31,13 @@ import {
 } from './reach.js';
 
 export interface BlueskyOptions extends ReachConstants {
-  /** Real people the simulated population stands for; 250 = the backtest crowd (100 active + 150 voters). */
+  /** Real people the simulated population stands for; 75 (under the 250-person backtest crowd) is calibrated in its history.md. */
   audiencePool: number;
 }
 
 export const DEFAULT_OPTIONS: BlueskyOptions = {
   ...readFit(),
-  audiencePool: 250
+  audiencePool: 75
 };
 
 const quotes = (s: ThreadState): number =>
