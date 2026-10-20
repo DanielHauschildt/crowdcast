@@ -53,12 +53,12 @@ describe('reddit platform', () => {
   it('ranks by hot score, so downvotes sink the post', async () => {
     const p = await loadPlatform('reddit');
     const post = makePost();
-    expect(p.visibility(votes(emptyThread(post), 99, 0), 2).band).toBe('top5');
+    expect(p.visibility(votes(emptyThread(post), 199, 0), 2).band).toBe('top5');
     expect(
-      p.visibility(votes(emptyThread(post), 99, 0), 2).visitorFraction
-    ).toBe(1);
-    expect(p.visibility(votes(emptyThread(post), 15, 0), 2).band).toBe('top25');
-    expect(p.visibility(votes(emptyThread(post), 15, 15), 2).band).toBe('new');
+      p.visibility(votes(emptyThread(post), 199, 0), 2).visitorFraction
+    ).toBe(0.5);
+    expect(p.visibility(votes(emptyThread(post), 29, 0), 2).band).toBe('top25');
+    expect(p.visibility(votes(emptyThread(post), 29, 29), 2).band).toBe('new');
     expect(p.rankScore(votes(emptyThread(post), 9, 0), 0)).toBeCloseTo(1);
     expect(p.rankScore(votes(emptyThread(post), 0, 11), 0)).toBeCloseTo(-1);
   });

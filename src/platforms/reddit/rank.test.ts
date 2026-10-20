@@ -32,10 +32,12 @@ describe('hotScore', () => {
 describe('bands', () => {
   it('maps hot score to the hot-list position, best first', () => {
     expect(BAND_ORDER).toEqual(['top5', 'top25', 'rising', 'new']);
-    expect(bandFor(hotScore(100, 2))).toBe('top5');
-    expect(bandFor(hotScore(20, 1))).toBe('top25');
-    expect(bandFor(hotScore(3, 0.5))).toBe('rising');
-    expect(bandFor(hotScore(1, 0.5))).toBe('new');
+    expect(bandFor(hotScore(200, 1))).toBe('top5');
+    expect(bandFor(hotScore(100, 2))).toBe('top25');
+    expect(bandFor(hotScore(30, 1))).toBe('top25');
+    expect(bandFor(hotScore(15, 1))).toBe('rising');
+    expect(bandFor(hotScore(5, 0.5))).toBe('rising');
+    expect(bandFor(hotScore(3, 0.5))).toBe('new');
     expect(bandFor(hotScore(-5, 0.5))).toBe('new');
   });
 
@@ -44,7 +46,7 @@ describe('bands', () => {
       const f = BAND_ORDER.map((b) => visitorFraction(b, step));
       expect([...f].sort((a, b) => b - a)).toEqual(f);
     }
-    expect(visitorFraction('top5', 3)).toBe(1);
+    expect(visitorFraction('top5', 3)).toBe(0.5);
     expect(visitorFraction('new', 0)).toBeGreaterThan(
       visitorFraction('new', 4)
     );

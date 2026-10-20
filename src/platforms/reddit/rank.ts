@@ -21,10 +21,11 @@ export function hotScore(score: number, ageHours: number): number {
 }
 
 /**
- * hotScore cut-offs for the post's position in a mid-sized launch subreddit's hot list, by hand:
- * ~60+ points in the first hours ≈ top 5; ~10+ ≈ top 25; a few early upvotes ≈ rising.
+ * hotScore cut-offs for the post's position in a mid-sized launch subreddit's hot list, from the 2026-10-20
+ * backtest (the old 1.6/0.9/0.3 sent every thread to top 5 within an hour):
+ * ~100+ points in the first hours ≈ top 5; ~20+ ≈ top 25; ~4+ ≈ rising.
  */
-export const BAND_THRESHOLDS = { top5: 1.6, top25: 0.9, rising: 0.3 } as const;
+export const BAND_THRESHOLDS = { top5: 2.0, top25: 1.3, rising: 0.6 } as const;
 
 export function bandFor(hot: number): RedditBand {
   if (hot >= BAND_THRESHOLDS.top5) return 'top5';
@@ -37,12 +38,12 @@ export function bandFor(hot: number): RedditBand {
 export function visitorFraction(band: RedditBand, step: number): number {
   switch (band) {
     case 'top5':
-      return 1;
+      return 0.5;
     case 'top25':
-      return 0.6;
-    case 'rising':
       return 0.3;
+    case 'rising':
+      return 0.15;
     case 'new':
-      return step < 2 ? 0.25 : 0.08;
+      return step < 2 ? 0.15 : 0.05;
   }
 }
