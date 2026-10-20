@@ -133,7 +133,9 @@ const crowdOf = (t: RealThread): Comment[] =>
       step: 0,
       depth: 0,
       ups: 0,
-      flags: 0
+      downs: 0,
+      flags: 0,
+      reactions: {}
     }));
 
 async function cached<T>(

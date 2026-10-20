@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { makePost } from '../test/fixtures.js';
 import {
   applyEvent,
+  commentScore,
   emptyThread,
   isDead,
+  postPoints,
   renderThread,
   replay,
   topComments,
@@ -86,6 +88,31 @@ describe('thread state', () => {
     applyEvent(s, up('v2', 'c1'));
     expect(s.postUps).toBe(1);
     expect(s.comments.get('c1')!.ups).toBe(1);
+  });
+
+  it("counts 'down' against the target and every reaction by value", () => {
+    const s = replay(makePost(), [comment('c1', 'post', 'p1')]);
+    const vote = (voter: string, target: string, value: string): SimEvent => ({
+      kind: 'vote',
+      step: 0,
+      voter,
+      target,
+      value
+    });
+    applyEvent(s, vote('v1', 'post', 'up'));
+    applyEvent(s, vote('v2', 'post', 'down'));
+    applyEvent(s, vote('v3', 'post', 'down'));
+    applyEvent(s, vote('v3', 'post', 'up'));
+    applyEvent(s, vote('v4', 'post', 'repost'));
+    applyEvent(s, vote('v1', 'c1', 'up'));
+    applyEvent(s, vote('v2', 'c1', 'down'));
+    applyEvent(s, vote('p1', 'c1', 'down'));
+    expect(postPoints(s)).toBe(1 + 2 - 2);
+    expect(s.postReactions).toEqual({ up: 1, down: 2, repost: 1 });
+    const c1 = s.comments.get('c1')!;
+    expect(commentScore(c1)).toBe(0);
+    expect(c1.reactions).toEqual({ up: 1, down: 1 });
+    expect(isDead(c1)).toBe(false);
   });
 
   it('every reply attaches to an existing parent with depth = parent + 1', () => {

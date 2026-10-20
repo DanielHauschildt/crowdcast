@@ -14,13 +14,19 @@ export interface Comment {
   step: number;
   depth: number;
   ups: number;
+  downs: number;
   flags: number;
+  /** Votes by value, e.g. `{ up: 3, down: 1 }`. */
+  reactions: Record<string, number>;
 }
 
 export interface ThreadState {
   post: Post;
   postUps: number;
+  postDowns: number;
   postFlags: number;
+  /** Votes on the post by value. */
+  postReactions: Record<string, number>;
   comments: Map<string, Comment>;
   /** `${voter}|${target}` — one vote per actor per target. */
   voted: Set<string>;
@@ -33,7 +39,9 @@ export function emptyThread(post: Post): ThreadState {
   return {
     post,
     postUps: 0,
+    postDowns: 0,
     postFlags: 0,
+    postReactions: {},
     comments: new Map(),
     voted: new Set(),
     departed: new Set(),
@@ -45,6 +53,10 @@ export function emptyThread(post: Post): ThreadState {
 export function newCommentId(s: ThreadState): string {
   return `c${s.nextId}`;
 }
+
+const bump = (counts: Record<string, number>, value: string): void => {
+  counts[value] = (counts[value] ?? 0) + 1;
+};
 
 export function applyEvent(s: ThreadState, e: SimEvent): void {
   switch (e.kind) {
@@ -67,7 +79,9 @@ export function applyEvent(s: ThreadState, e: SimEvent): void {
         step: e.step,
         depth,
         ups: 0,
-        flags: 0
+        downs: 0,
+        flags: 0,
+        reactions: {}
       });
       s.nextId = Math.max(s.nextId, Number(e.id.slice(1)) + 1);
       return;
@@ -75,15 +89,19 @@ export function applyEvent(s: ThreadState, e: SimEvent): void {
     case 'vote': {
       const key = `${e.voter}|${e.target}`;
       if (s.voted.has(key)) return;
-      // 'flag' counts against the target; every other reaction counts for it.
+      // 'flag' and 'down' count against the target; every other reaction counts for it.
       if (e.target === 'post') {
         if (e.value === 'flag') s.postFlags++;
+        else if (e.value === 'down') s.postDowns++;
         else s.postUps++;
+        bump(s.postReactions, e.value);
       } else {
         const c = s.comments.get(e.target);
         if (!c || c.author === e.voter) return;
         if (e.value === 'flag') c.flags++;
+        else if (e.value === 'down') c.downs++;
         else c.ups++;
+        bump(c.reactions, e.value);
       }
       s.voted.add(key);
       return;
@@ -105,13 +123,13 @@ export function replay(post: Post, events: readonly SimEvent[]): ThreadState {
   return s;
 }
 
-/** The submitter's own vote counts, as on HN. */
+/** The submitter's own vote counts, as on HN and Reddit. */
 export function postPoints(s: ThreadState): number {
-  return 1 + s.postUps;
+  return 1 + s.postUps - s.postDowns;
 }
 
 export function commentScore(c: Comment): number {
-  return c.ups - 2 * c.flags;
+  return c.ups - c.downs - 2 * c.flags;
 }
 
 /** HN kills a comment once enough users flag it. */

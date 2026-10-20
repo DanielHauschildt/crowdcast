@@ -1,7 +1,7 @@
 import type { CommentLabel, Label } from './label.js';
 import type { Platform } from './platform.js';
 import hn from './platforms/hn/index.js';
-import { replay, type ThreadState } from './thread.js';
+import { postPoints, replay, type ThreadState } from './thread.js';
 import { FOUNDER, type PersonaSet, type Post, type SimEvent } from './types.js';
 
 export interface FounderEffect {
@@ -123,7 +123,7 @@ export function computeMetrics(
     })),
     peakBand,
     frontPage: platform.frontPage.includes(peakBand),
-    finalPoints: 1 + s.postUps,
+    finalPoints: postPoints(s),
     comments: crowd.length,
     founderReplies: comments.filter((c) => c.author === FOUNDER).length,
     maxDepth: comments.reduce((m, c) => Math.max(m, c.depth), 0),
