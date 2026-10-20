@@ -263,6 +263,7 @@ describe('backtest --platform', () => {
         applied.push(options);
         return {
           ...hn,
+          visibility: () => ({ band: 'new', visitorFraction: 1 }),
           agentRules: `${hn.agentRules} (${String(options.flavour)})`
         };
       }

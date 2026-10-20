@@ -18,17 +18,20 @@ export function bandFor(score: number): Band {
   return 'new';
 }
 
-/** Share of the population that opens the thread during one step in this band. */
+/**
+ * Share of the population that opens the thread during one step in this band. Backtest round
+ * calib-hn-1 scaled all bands by 0.4: at 1 / .75 / .4 / .3 the sim made 3–20× the real comments.
+ */
 export function visitorFraction(band: Band, step: number): number {
   switch (band) {
     case 'top10':
-      return 1;
-    case 'top30':
-      return 0.75;
-    case 'page2':
       return 0.4;
+    case 'top30':
+      return 0.3;
+    case 'page2':
+      return 0.16;
     case 'new':
-      return step < 3 ? 0.3 : 0.12;
+      return step < 3 ? 0.12 : 0.05;
   }
 }
 

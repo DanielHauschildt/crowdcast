@@ -214,6 +214,16 @@ async function goldenPrompts(): Promise<string[]> {
   return shapes(llm);
 }
 
+// UPDATE_GOLDEN=1 rewrites both fixtures; only for a deliberate HN behaviour change.
+if (process.env.UPDATE_GOLDEN === '1') {
+  const events = await goldenRun();
+  writeFileSync(
+    GOLDEN_FILE,
+    events.map((e) => JSON.stringify(e)).join('\n') + '\n'
+  );
+  writeFileSync(PROMPTS_FILE, (await goldenPrompts()).join('\n') + '\n');
+}
+
 describe('HN golden run', () => {
   it('produces the same events as before the platform refactor', async () => {
     expect(await goldenRun()).toEqual(readEvents(GOLDEN_FILE));

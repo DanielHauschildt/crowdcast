@@ -14,7 +14,7 @@ describe('loadPlatform', () => {
     expect(p.commentVote).toBe('up');
     expect(p.bands).toEqual(['top10', 'top30', 'page2', 'new']);
     const s = emptyThread(makePost());
-    expect(p.visibility(s, 0)).toEqual({ band: 'new', visitorFraction: 0.3 });
+    expect(p.visibility(s, 0)).toEqual({ band: 'new', visitorFraction: 0.12 });
     expect(p.rankScore(s, 1)).toBe(0);
     expect(p.agentSystem(makePersona(1))).toContain('Hacker News user');
     for (const text of [

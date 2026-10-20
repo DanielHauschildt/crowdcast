@@ -9,3 +9,4 @@
 | 20261004-0940 | 6 | 2 | 5 | 32% | 0.60 | 0.90 | 4.22 | -0.71 | round 2 completion: 5 threads cut off by session limit | – | train | 5 |
 | 20261004-round2-combined | 6 | 2 | 15 | 29% | 0.51 | 0.77 | 0.69 | -0.40 | round 2 combined: 0737 (10 ok) + 0940 (5 rerun) | – | train | 15 |
 | 20261020-1913 | 6 | 7 | 2 | 0% [0%–0%] | 0.53 [0.45–0.62] | – | 11.29 | -0.90 | baseline: integration 805f08e (sample 10 seed 7, first 5) | 7.75 [3.08–19.50] | train | 5 |
+| 20261020-1933 | 6 | 7 | 5 | 16% [4%–28%] | 0.60 [0.55–0.68] | 0.10 | 1.50 | -0.27 | round 1: HN visitor fractions x0.4 (top10 .4, top30 .3, page2 .16, new .12/.05) | 1.94 [0.63–5.75] | train | 5 |
