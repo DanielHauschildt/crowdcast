@@ -20,16 +20,21 @@ import {
   historyRow,
   HISTORY_HEADER,
   parseThreadList,
-  scorecardMarkdown
+  scorecardMarkdown,
+  selectIds
 } from '../scorecard.js';
 import { parseSegments } from '../seed.js';
 import type { Seed } from '../types.js';
 
-export const BACKTEST_USAGE = `  crowdcast backtest [<hn-id>…] [--threads simulations/backtests/threads.txt] [--steps 6]
-                     [--parallel 3] [--seed 1] [--concurrency 4] [--max-calls 400] [--note "…"]`;
+export const BACKTEST_USAGE = `  crowdcast backtest [<hn-id>…] [--threads simulations/backtests/threads.txt] [--set train|holdout|all]
+                     [--sample N] [--limit N] [--steps 6] [--parallel 3] [--seed 1] [--concurrency 4]
+                     [--max-calls 400] [--note "…"]`;
 
 const OPTIONS = {
   threads: { type: 'string', default: 'simulations/backtests/threads.txt' },
+  set: { type: 'string', default: 'train' },
+  sample: { type: 'string' },
+  limit: { type: 'string' },
   steps: { type: 'string', default: '6' },
   parallel: { type: 'string', default: '3' },
   seed: { type: 'string', default: '1' },
@@ -91,16 +96,42 @@ async function runBacktest(
 ): Promise<number> {
   const threadsFile = resolve(v.threads);
   const root = dirname(threadsFile);
+  const holdout = join(root, 'holdout.txt');
+  const files: Partial<Record<string, string[]>> = {
+    train: [threadsFile],
+    holdout: [holdout],
+    all: [threadsFile, holdout]
+  };
+  const lists = files[v.set];
+  const count = (flag: string | undefined): number | undefined =>
+    flag === undefined ? undefined : Number(flag);
+  const sample = count(v.sample);
+  const limit = count(v.limit);
+  if (
+    !lists ||
+    [sample, limit].some(
+      (n) => n !== undefined && !(Number.isInteger(n) && n > 0)
+    )
+  ) {
+    deps.log(
+      `backtest: --set is train, holdout or all; --sample and --limit are positive integers\nusage:\n${BACKTEST_USAGE}`
+    );
+    return 2;
+  }
+  const set = positionals.length > 0 ? 'ids' : v.set;
+  const rngSeed = Number(v.seed);
   const ids =
     positionals.length > 0
       ? positionals.map(Number)
-      : parseThreadList(readFileSync(threadsFile, 'utf8'));
+      : selectIds(
+          lists.flatMap((f) => parseThreadList(readFileSync(f, 'utf8'))),
+          { sample, limit, seed: rngSeed }
+        );
   if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || id <= 0)) {
     deps.log(`backtest: no valid HN ids\nusage:\n${BACKTEST_USAGE}`);
     return 2;
   }
   const steps = Number(v.steps);
-  const rngSeed = Number(v.seed);
   const concurrency = Number(v.concurrency);
   const segs = parseSegments(readFileSync(join(root, 'segments.yaml'), 'utf8'));
   const audience: Seed = {
@@ -120,7 +151,7 @@ async function runBacktest(
   );
   const stamp = stampOf(deps.now());
   deps.log(
-    `backtest ${stamp}: ${ids.length} threads, ${personas.personas.length} personas, ${personas.voters.length} voters, ${steps} steps`
+    `backtest ${stamp}: ${ids.length} threads (${set}), ${personas.personas.length} personas, ${personas.voters.length} voters, ${steps} steps`
   );
 
   const scores = new Map<number, ThreadScore>();
@@ -159,8 +190,8 @@ async function runBacktest(
     deps.log('backtest: every thread failed');
     return 1;
   }
-  const agg = aggregate(ordered);
-  const meta = { stamp, steps, seed: rngSeed };
+  const agg = aggregate(ordered, rngSeed);
+  const meta = { stamp, steps, seed: rngSeed, set };
   const outDir = join(root, stamp);
   mkdirSync(outDir, { recursive: true });
   writeFileSync(
@@ -173,7 +204,7 @@ async function runBacktest(
     writeFileSync(history, `# Backtest history\n\n${HISTORY_HEADER}\n`);
   appendFileSync(
     history,
-    `${historyRow(agg, { ...meta, note: v.note || `${ordered.length} threads` })}\n`
+    `${historyRow(agg, { ...meta, n: ids.length, note: v.note || `${ordered.length} threads` })}\n`
   );
   deps.log(`scorecard: ${join(outDir, 'scorecard.md')}`);
   return 0;

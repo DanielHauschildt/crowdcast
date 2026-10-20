@@ -13,6 +13,7 @@ import { personaHandler } from '../../test/fixtures.js';
 import { main } from '../cli.js';
 import type { FetchFn } from '../hn.js';
 import { FakeLlm, type LlmRequest } from '../llm.js';
+import { selectIds } from '../scorecard.js';
 import { backtest } from './backtest.js';
 
 function workspace(): string {
@@ -22,6 +23,7 @@ function workspace(): string {
     join(root, 'threads.txt'),
     '# id  # title, points\n1  # One, 30\n2  # Two, 5\n3  # Three, 90\n'
   );
+  writeFileSync(join(root, 'holdout.txt'), '4  # Four, 40\n5  # Five, 50\n');
   writeFileSync(
     join(root, 'segments.yaml'),
     'active: 12\nvoters: 20\nsegments:\n  - id: hn\n    share: 1\n    leanings: general\n'
@@ -152,6 +154,55 @@ describe('backtest command', () => {
       { ...deps([]) }
     );
     expect(code).toBe(0);
+  });
+});
+
+describe('backtest thread sets', () => {
+  const ran = (root: string): number[] =>
+    readdirSync(join(root, 'runs'))
+      .map((d) => Number(/-hn(\d+)-/.exec(d)![1]))
+      .sort((a, b) => a - b);
+  const run = (root: string, ...args: string[]) =>
+    backtest(
+      ['--threads', join(root, 'threads.txt'), '--steps', '1', ...args],
+      deps([])
+    );
+
+  it('runs the holdout list and records the set and n in scorecard and history', async () => {
+    const root = workspace();
+    expect(await run(root, '--set', 'holdout')).toBe(0);
+    expect(ran(root)).toEqual([4, 5]);
+    const card = readFileSync(
+      join(root, '20261004-0905', 'scorecard.md'),
+      'utf8'
+    );
+    expect(card).toContain('2 real Show HN threads (holdout set)');
+    const history = readFileSync(join(root, 'history.md'), 'utf8');
+    expect(history).toMatch(/\| holdout \| 2 \|\n$/);
+  });
+
+  it('samples a seeded subset of all threads', async () => {
+    const root = workspace();
+    expect(
+      await run(root, '--set', 'all', '--sample', '2', '--seed', '3')
+    ).toBe(0);
+    const expected = selectIds([1, 2, 3, 4, 5], { sample: 2, seed: 3 });
+    expect(ran(root)).toEqual([...expected].sort((a, b) => a - b));
+    expect(readFileSync(join(root, 'history.md'), 'utf8')).toMatch(
+      /\| all \| 2 \|\n$/
+    );
+  });
+
+  it('takes the first N of the train set with --limit', async () => {
+    const root = workspace();
+    expect(await run(root, '--limit', '2')).toBe(0);
+    expect(ran(root)).toEqual([1, 2]);
+  });
+
+  it('rejects an unknown set or a non-positive sample', async () => {
+    const root = workspace();
+    expect(await run(root, '--set', 'dev')).toBe(2);
+    expect(await run(root, '--sample', '0')).toBe(2);
   });
 });
 
