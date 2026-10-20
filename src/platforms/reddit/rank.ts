@@ -22,7 +22,7 @@ export function hotScore(score: number, ageHours: number): number {
 
 /**
  * hotScore cut-offs for the post's position in a mid-sized launch subreddit's hot list, from the 2026-10-20
- * backtest (the old 1.6/0.9/0.3 sent every thread to top 5 within an hour):
+ * backtest (the old 1.6/0.9/0.3 put 2 of 3 threads in the top 5 within an hour):
  * ~100+ points in the first hours ≈ top 5; ~20+ ≈ top 25; ~4+ ≈ rising.
  */
 export const BAND_THRESHOLDS = { top5: 2.0, top25: 1.3, rising: 0.6 } as const;
