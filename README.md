@@ -1,8 +1,8 @@
 # crowdcast
 
-Rehearses a Show HN thread with LLM personas before the real launch: what people will object
-to, which framing lands, which of your answers help. Output is synthetic — hypotheses to test,
-not a forecast.
+Rehearses a Show HN thread (or a Reddit, Bluesky, X or LinkedIn post) with LLM personas before
+the real launch: what people will object to, which framing lands, which of your answers help.
+Output is synthetic — hypotheses to test, not a forecast.
 
 **Start here: [docs/guide.md](docs/guide.md)** — purpose, value, and a worked example
 (`examples/show-hn-tablecraft`). Design: `docs/design.md`.
@@ -29,6 +29,29 @@ A run dir holds `events.jsonl` (source of truth), `thread.md`, `metrics.json`, `
 `labels.json`, `calls.jsonl`, `interviews.md`. Everything except `events.jsonl` can be
 regenerated with `report`. Interrupted runs continue with `run <seed> --resume <runDir>`.
 
+## Platforms
+
+A seed picks its platform with an optional `platform.yaml` (`platform`, `author: {followers, audience,
+connections}`, other keys are the platform's options); `--platform <id>` on `run`/`compare` overrides it. `run.json`
+keeps all of it, so `report`, `interview` and `compare` reload the same options.
+
+| Platform   | Example seed                   | Reach model                                                        | Status                                  |
+| ---------- | ------------------------------ | ------------------------------------------------------------------ | --------------------------------------- |
+| `hn`       | `examples/show-hn-tablecraft`  | HN rank formula, front-page bands (default)                        | backtested (108 threads)                |
+| `reddit`   | `examples/reddit-tablecraft`   | Reddit hot in one subreddit (`subreddit`, `flair`), downvotes      | backtested (35 threads, Arctic Shift)   |
+| `bluesky`  | `examples/bluesky-tablecraft`  | follower reach plus reposts and quotes, fitted on real likes       | backtested (44 posts, public AppView)   |
+| `x`        | `examples/x-tablecraft`        | Bluesky follower reach plus a For You ranker from X's open weights | unvalidated: disclaimer on every report |
+| `linkedin` | `examples/linkedin-tablecraft` | test slice of the network, expansion on early engagement           | unvalidated: disclaimer on every report |
+
+```bash
+pnpm crowdcast run examples/reddit-tablecraft --steps 2
+pnpm crowdcast fit bluesky simulations/backtests/bluesky/threads.txt   # refit fit.json from real posts
+pnpm crowdcast fit linkedin my-post-analytics.csv --followers 1800      # constants for your own platform.yaml
+```
+
+Persona caches are per platform (`personas/<platform>-seed-N.json`; HN keeps `personas/seed-N.json`). To add a
+platform, see "Platforms" in `docs/design.md`.
+
 ## Backtest
 
 `backtest` checks the simulator against real Show HN threads. Each thread in
@@ -37,11 +60,28 @@ regenerated with `report`. Interrupted runs continue with `run <seed> --resume <
 `simulations/backtests/segments.yaml`, and the real OP's own comments as the founder's answers.
 
 ```bash
-pnpm crowdcast backtest                       # every thread in threads.txt
+pnpm crowdcast backtest                       # the train set (threads.txt)
 pnpm crowdcast backtest 44638842 --steps 2    # one thread
+pnpm crowdcast backtest --set holdout         # train, holdout or all; tune on train, report holdout
+pnpm crowdcast backtest --set all --sample 10 --limit 5   # a seeded sample (--seed), then the first 5
+pnpm crowdcast backtest --platform reddit     # lists under simulations/backtests/<platform>/
 ```
+
+A list line is an id, optionally followed by platform options (`2611669540 subreddit=selfhosted  # comment`).
+Platforms that know the poster (Bluesky) pass their follower count into the simulation.
 
 The scorecard (`simulations/backtests/<stamp>/scorecard.md`) reports theme recall, objection-mix
 total-variation distance, Spearman correlation of simulated vs real points, comment-count ratio and
-sentiment gap; each run appends one row to `simulations/backtests/history.md`, so a calibration
-change is kept only if the aggregate improves (`--note` labels the row).
+sentiment gap, with bootstrap 90% intervals; each run appends one row to
+`simulations/backtests[/<platform>]/history.md`, so a calibration change is kept only if the aggregate improves
+(`--note` labels the row).
+
+## Track
+
+`track` polls the HN Firebase API for live Show HN stories (ids, points, comments, rank; no text) into
+`simulations/timelines/data/`, and `track fit` fits the step schedule's band thresholds from them:
+
+```bash
+pnpm crowdcast track --hours 48
+pnpm crowdcast track fit      # writes simulations/timelines/fit.md and fit.json (gitignored)
+```
