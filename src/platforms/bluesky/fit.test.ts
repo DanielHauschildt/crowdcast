@@ -54,10 +54,6 @@ describe('fitReach', () => {
     expect(constants.baseReach / truth.a).toBeLessThan(1.07);
     expect(constants.repostFactor / truth.r).toBeGreaterThan(0.85);
     expect(constants.repostFactor / truth.r).toBeLessThan(1.15);
-    expect(constants.repostShare).toBeCloseTo(
-      60 / (60 + posts.reduce((s, p) => s + p.likes, 0)),
-      6
-    );
     expect(constants.authorFollowers).toBe(10000);
   });
 

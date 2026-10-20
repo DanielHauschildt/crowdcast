@@ -8,9 +8,7 @@ export interface ReachConstants {
   /** Likes per reposter follower in the first step. */
   repostFactor: number;
   halfLifeHours: number;
-  /** Share of the post's likes + reposts that are reposts. */
-  repostShare: number;
-  /** Typical follower count of a reposter or quoter. */
+  /** Mean follower count of a reposter or quoter. */
   reposterFollowers: number;
   /** Typical author follower count of the reference posts; backtests use it (RealThread has no author). */
   authorFollowers: number;
@@ -20,7 +18,6 @@ export const DEFAULT_REACH: ReachConstants = {
   baseReach: 0.002,
   repostFactor: 0.002,
   halfLifeHours: 1,
-  repostShare: 0.2,
   reposterFollowers: 1000,
   authorFollowers: 5000
 };

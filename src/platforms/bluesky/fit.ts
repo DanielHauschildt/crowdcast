@@ -119,15 +119,12 @@ export function fitReach(
   if (r < 0) [a, r] = [s1y / (s11 || 1), 0];
   if (a < 0) [a, r] = [0, s2y / (s22 || 1)];
 
-  const reposts = timelines.reduce((x, t) => x + t.reposts, 0);
-  const likes = timelines.reduce((x, t) => x + t.likes, 0);
   return {
     constants: {
       baseReach: a,
       repostFactor: r,
       halfLifeHours,
-      repostShare: reposts + likes > 0 ? reposts / (reposts + likes) : 0,
-      reposterFollowers: median(timelines.flatMap((t) => t.reposterFollowers)),
+      reposterFollowers: mean(timelines.flatMap((t) => t.reposterFollowers)),
       authorFollowers: median(timelines.map((t) => t.followers))
     },
     n: used.length
