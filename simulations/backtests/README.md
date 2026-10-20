@@ -2,7 +2,8 @@
 
 Real Show HN threads the simulator is scored against (`pnpm crowdcast backtest`). One HN id per line,
 `id  # title, points, comments`; points and comments are as fetched, the thread itself is cached under
-`threads/<id>/` (gitignored).
+`threads/<id>/` (gitignored). A line may carry platform options after the id, `id key=value …  # comment`; they
+are applied to that thread's platform like extra `platform.yaml` keys (reddit: `subreddit=selfhosted`).
 
 | File | Set | What |
 |---|---|---|

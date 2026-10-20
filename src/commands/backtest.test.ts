@@ -250,6 +250,45 @@ describe('backtest --platform', () => {
     expect(fetched.sort()).toEqual([1, 2, 3]);
   });
 
+  it('applies per-thread options from the list and keeps them in run.json', async () => {
+    const root = workspace();
+    writeFileSync(
+      join(root, 'threads.txt'),
+      '1 flavour=spicy  # One\n2  # Two\n'
+    );
+    const applied: Array<Record<string, unknown>> = [];
+    const flavoured: Platform = {
+      ...hn,
+      withOptions: (options) => {
+        applied.push(options);
+        return {
+          ...hn,
+          agentRules: `${hn.agentRules} (${String(options.flavour)})`
+        };
+      }
+    };
+    const llm = new FakeLlm(world);
+    const code = await backtest(
+      ['--threads', join(root, 'threads.txt'), '--steps', '1'],
+      { ...deps([]), makeLlm: () => llm, loadPlatform: async () => flavoured }
+    );
+    expect(code).toBe(0);
+    expect(applied).toEqual([{ flavour: 'spicy' }]);
+    const agentPrompts = llm.requests
+      .filter((r) => r.label.startsWith('agent:'))
+      .map((r) => r.prompt);
+    expect(agentPrompts.some((p) => p.includes('(spicy)'))).toBe(true);
+    const meta = (id: number) =>
+      JSON.parse(
+        readFileSync(
+          join(root, 'runs', `20261004-0905-hn${id}-s1`, 'run.json'),
+          'utf8'
+        )
+      ) as { options?: Record<string, unknown> };
+    expect(meta(1).options).toEqual({ flavour: 'spicy' });
+    expect(meta(2).options).toEqual({});
+  });
+
   it('exits 1 naming the known platforms for an unknown id', async () => {
     const root = workspace();
     const logs: string[] = [];

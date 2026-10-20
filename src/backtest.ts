@@ -262,6 +262,8 @@ export interface BacktestThreadArgs {
   rngSeed: number;
   /** Default: HN. */
   platform?: Platform;
+  /** The thread list's options the platform was built with; kept in run.json. */
+  options?: Record<string, unknown>;
 }
 
 export async function backtestThread(
@@ -280,6 +282,7 @@ export async function backtestThread(
   const meta: RunMeta = {
     platform: platform.id,
     ...(real.author ? { author: real.author } : {}),
+    options: a.options ?? {},
     seedName: seed.name,
     variant: 'backtest',
     rngSeed: a.rngSeed,

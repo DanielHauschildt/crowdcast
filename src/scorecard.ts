@@ -3,19 +3,35 @@ import { DISCLAIMER } from './report.js';
 import { mulberry32, shuffle } from './rng.js';
 import { ageHours } from './schedule.js';
 
-export function parseThreadList(text: string): number[] {
-  const ids: number[] = [];
-  text.split('\n').forEach((raw, i) => {
-    const line = raw.replace(/#.*$/, '').trim();
-    if (!line) return;
-    if (!/^\d+$/.test(line))
-      throw new Error(
-        `threads list line ${i + 1}: "${raw.trim()}" is not an HN id`
-      );
-    ids.push(Number(line));
-  });
-  return ids;
+export interface ThreadEntry {
+  id: number;
+  /** Platform options for this thread, e.g. `subreddit=selfhosted`. */
+  options: Record<string, unknown>;
 }
+
+/** One id per line, optionally followed by `key=value` options; `#` starts a comment. */
+export function parseThreadEntries(text: string): ThreadEntry[] {
+  const entries: ThreadEntry[] = [];
+  text.split('\n').forEach((raw, i) => {
+    const [id, ...pairs] = raw.replace(/#.*$/, '').trim().split(/\s+/);
+    if (!id) return;
+    const fail = (msg: string): never => {
+      throw new Error(`threads list line ${i + 1}: "${raw.trim()}" ${msg}`);
+    };
+    if (!/^\d+$/.test(id)) fail('does not start with a thread id');
+    const options: Record<string, unknown> = {};
+    for (const pair of pairs) {
+      const m = /^(\w+)=(\S+)$/.exec(pair);
+      if (!m) return fail(`: "${pair}" is not key=value`);
+      options[m[1]!] = /^-?\d+(\.\d+)?$/.test(m[2]!) ? Number(m[2]) : m[2];
+    }
+    entries.push({ id: Number(id), options });
+  });
+  return entries;
+}
+
+export const parseThreadList = (text: string): number[] =>
+  parseThreadEntries(text).map((e) => e.id);
 
 const HOLDOUT_SHARE = 0.3;
 

@@ -12,7 +12,7 @@ import { estimateCalls, runSimulation } from './engine.js';
 import type { FetchFn } from './hn-users.js';
 import { interview } from './interview.js';
 import { ClaudeCli, type Llm } from './llm.js';
-import { loadOrGeneratePersonas } from './personas.js';
+import { loadOrGeneratePersonas, personaCacheFile } from './personas.js';
 import type { Platform } from './platform.js';
 import { loadPlatform } from './platforms/index.js';
 import {
@@ -101,11 +101,12 @@ async function loadPersonas(
   }
   const seed = loadSeed(seedDir);
   const personaSeed = Number(v['persona-seed'] ?? v.seed);
+  const platform = await seedPlatform(seed, v);
   return loadOrGeneratePersonas(
     deps.makeLlm({ concurrency: Number(v.concurrency), logFile: undefined }),
     seed,
-    join(seed.dir, 'personas', `seed-${personaSeed}.json`),
-    await seedPlatform(seed, v)
+    personaCacheFile(seed.dir, platform.id, personaSeed),
+    platform
   );
 }
 

@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import type { Llm } from './llm.js';
 import type { Platform } from './platform.js';
 import hn from './platforms/hn/index.js';
@@ -249,6 +249,20 @@ export async function generatePersonas(
   }
   return { personas, voters };
 }
+
+/** `personas/<platform>-seed-N.json`; HN keeps the pre-platform `personas/seed-N.json`. */
+export const personaCacheFile = (
+  dir: string,
+  platformId: string,
+  seed: number
+): string =>
+  join(
+    dir,
+    'personas',
+    platformId === hn.id
+      ? `seed-${seed}.json`
+      : `${platformId}-seed-${seed}.json`
+  );
 
 export async function loadOrGeneratePersonas(
   llm: Llm,

@@ -72,6 +72,10 @@ describe('loadPlatform("x")', () => {
     await expect(loadPlatform('x', { linkPenalty: 0 })).rejects.toThrow(
       /linkPenalty/
     );
+    await expect(loadPlatform('x', { linkPenalty: 1.5 })).rejects.toThrow(
+      /"linkPenalty" must be in \(0, 1\]/
+    );
+    expect((await loadPlatform('x', { linkPenalty: 1 })).id).toBe('x');
   });
 });
 

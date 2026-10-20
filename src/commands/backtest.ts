@@ -14,14 +14,14 @@ import {
 } from '../backtest.js';
 import type { CliDeps } from '../cli.js';
 import type { FetchFn } from '../hn.js';
-import { loadOrGeneratePersonas } from '../personas.js';
+import { loadOrGeneratePersonas, personaCacheFile } from '../personas.js';
 import type { Platform } from '../platform.js';
 import { DEFAULT_PLATFORM, loadPlatform } from '../platforms/index.js';
 import {
   aggregate,
   historyRow,
   HISTORY_HEADER,
-  parseThreadList,
+  parseThreadEntries,
   scorecardMarkdown,
   selectIds
 } from '../scorecard.js';
@@ -73,6 +73,16 @@ async function pool<T>(
   await Promise.all(
     Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, lane)
   );
+}
+
+function withThreadOptions(
+  platform: Platform,
+  options: Record<string, unknown>
+): Platform {
+  if (Object.keys(options).length === 0) return platform;
+  if (!platform.withOptions)
+    throw new Error(`platform ${platform.id} takes no thread options`);
+  return platform.withOptions(options);
 }
 
 export async function backtest(argv: string[], deps: Deps): Promise<number> {
@@ -132,13 +142,18 @@ async function runBacktest(
   }
   const set = positionals.length > 0 ? 'ids' : v.set;
   const rngSeed = Number(v.seed);
+  const entries = (fs: readonly string[]) =>
+    fs.flatMap((f) => parseThreadEntries(readFileSync(f, 'utf8')));
   const ids =
     positionals.length > 0
       ? positionals.map(Number)
       : selectIds(
-          lists.flatMap((f) => parseThreadList(readFileSync(f, 'utf8'))),
+          entries(lists).map((e) => e.id),
           { sample, limit, seed: rngSeed }
         );
+  const optionsOf = new Map(
+    entries(files.all!.filter(existsSync)).map((e) => [e.id, e.options])
+  );
   if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || id <= 0)) {
     deps.log(`backtest: no valid thread ids\nusage:\n${BACKTEST_USAGE}`);
     return 2;
@@ -159,7 +174,7 @@ async function runBacktest(
   const personas = await loadOrGeneratePersonas(
     deps.makeLlm({ concurrency }),
     audience,
-    join(root, 'personas', `seed-${rngSeed}.json`),
+    personaCacheFile(root, platform.id, rngSeed),
     platform
   );
   const stamp = stampOf(deps.now());
@@ -172,6 +187,7 @@ async function runBacktest(
     try {
       const threadDir = join(root, 'threads', String(id));
       const real = await loadOrFetchThread(threadDir, id, deps.fetch, platform);
+      const options = optionsOf.get(id) ?? {};
       const runDir = join(
         root,
         'runs',
@@ -191,7 +207,8 @@ async function runBacktest(
         personas,
         steps,
         rngSeed,
-        platform
+        platform: withThreadOptions(platform, options),
+        options
       });
       scores.set(id, s);
       deps.log(

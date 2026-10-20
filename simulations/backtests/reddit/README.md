@@ -10,14 +10,14 @@ comment tree); the thread itself is cached under `threads/<id>/` (gitignored).
 | `threads.txt` | `train` | 22 threads |
 | `holdout.txt` | `holdout` | 13 threads, never used while tuning |
 
-Thread lists are numeric, so each line holds `parseInt(<base36 post id>, 36)`; the comment keeps the base36 id,
-subreddit, month, title, points and comments. The split uses the same `isHoldout(id)` hash as the HN sets.
+Thread lists are numeric, so each line holds `parseInt(<base36 post id>, 36)`, then `subreddit=<name>`; the comment
+keeps the base36 id, month, title, points and comments. The split uses the same `isHoldout(id)` hash as the HN sets.
 
 ```sh
 pnpm crowdcast backtest --platform reddit --sample 2 --steps 2
 pnpm crowdcast backtest --platform reddit --set holdout
 ```
 
-`segments.yaml` is one general Reddit dev audience for every thread. The backtest runs the platform's default
-subreddit prompts (r/SideProject) for every thread: `backtest` has no per-thread platform options.
+`segments.yaml` is one general Reddit dev audience for every thread, and personas are generated once with the
+default subreddit's prompts (r/SideProject); each thread's simulation, labels and recall then use its own subreddit.
 r/startups is missing on purpose: it forbids product promotion, so it has no launch posts to compare against.

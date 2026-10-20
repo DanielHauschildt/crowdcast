@@ -8,6 +8,7 @@ import {
   historyRow,
   HISTORY_HEADER,
   isHoldout,
+  parseThreadEntries,
   parseThreadList,
   scorecardMarkdown,
   selectIds
@@ -52,6 +53,25 @@ describe('parseThreadList', () => {
 
   it('names the line it cannot read', () => {
     expect(() => parseThreadList('123\nabc # x\n')).toThrow(/line 2/);
+  });
+});
+
+describe('parseThreadEntries', () => {
+  it('reads key=value platform options after the id; numbers stay numbers', () => {
+    expect(
+      parseThreadEntries(
+        '# header\n7 subreddit=selfhosted audiencePool=190  # x=1\n8\n'
+      )
+    ).toEqual([
+      { id: 7, options: { subreddit: 'selfhosted', audiencePool: 190 } },
+      { id: 8, options: {} }
+    ]);
+  });
+
+  it('names the line with a malformed option', () => {
+    expect(() => parseThreadEntries('7\n8 subreddit\n')).toThrow(
+      /line 2.*key=value/
+    );
   });
 });
 

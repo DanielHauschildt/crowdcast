@@ -1,25 +1,26 @@
-# Reddit backtest train set: one id per line, parseInt(<base36 post id>, 36) because thread lists are numeric;
-# '# <base36 id> r/<subreddit> YYYY-MM, title, points, comments' (Arctic Shift, 2026-10-20).
+# Reddit backtest train set: one id per line, parseInt(<base36 post id>, 36) because thread lists are numeric,
+# then 'subreddit=<name>' (the prompts' subreddit for that thread);
+# '# <base36 id> YYYY-MM, title, points, comments' (Arctic Shift, 2026-10-20).
 
-2853055158    # 1b6mvg6 r/programming 2024-03, 3 years of work and 1 million users later, I just open-sourced my "Internet OS", 1330 points, 141 comments
-2611669540    # 176x544 r/selfhosted 2023-10, Messed around and made a GUI for container logs and configs, 10 points, 23 comments
-2637184786    # 17m40sy r/selfhosted 2023-11, I made a pocketbase dashboard for easier deployment., 5 points, 8 comments
-2647284314    # 17s4hne r/selfhosted 2023-11, I made a few small apps, available to run as docker containers..., 73 points, 16 comments
-2976079131    # 1d7vpcr r/selfhosted 2024-06, Introducing Your New Book Discovery Tool - eBookBuddy, 48 points, 13 comments
-2976550520    # 1d85t2w r/selfhosted 2024-06, Simplex Chat – fully open-source, private messenger without any user IDs (not even random numbers) – v5.8 released with private message routing, IP address protection and chat themes., 15 points, 10 comments
-3293826442    # 1ih24qy r/selfhosted 2025-02, Comic Library Utilities: v1.0 - Full Release w/ New Features & Updated UI, 39 points, 12 comments
-3294460330    # 1ihfpuy r/selfhosted 2025-02, Meelo - A Plex alternative for music collectors, 140 points, 76 comments
-3294845794    # 1ihnzaa r/selfhosted 2025-02, 🎉 Ghostboard v3.3.0 is Feature-Complete! 🎉, 125 points, 27 comments
-3295128625    # 1ihu1ip r/selfhosted 2025-02, OpenYT - Looking for more suggestions, 46 points, 12 comments
-2398402193    # 13ny2z5 r/SideProject 2023-05, I built a wordle BUT for songs: Songle 🎵, 37 points, 15 comments
-2411349993    # 13vnlk9 r/SideProject 2023-05, I’ve built a form builder where forms build themselves. What do you think?, 97 points, 44 comments
-2417171140    # 13z4d6s r/SideProject 2023-06, I've built a Reddit Ads Library (with more than 30,000 ads and growing), 28 points, 17 comments
-2430376439    # 146zegn r/SideProject 2023-06, I built a website to browse hundreds of AI companies and career pages, 6 points, 7 comments
-2833025105    # 1aupk5t r/SideProject 2024-02, I've built the ultimate note taking app so I'll stop texting myself everything, 22 points, 45 comments
-2836103014    # 1awjj3a r/SideProject 2024-02, I missed my gf and friends when traveling so I built an app to help keep in touch with them., 128 points, 54 comments
-2843494109    # 1b0xy3h r/SideProject 2024-02, I built a free tool that parses your emails and adds them to a todo list, 48 points, 29 comments
-2844061157    # 1b1a3mt r/SideProject 2024-02, I built an app that lets you publish docs as a full fledged website., 39 points, 37 comments
-2844512127    # 1b1jrlr r/SideProject 2024-02, I built a free one line wait list tool, 5 points, 8 comments
-3404775491    # 1kb45kz r/SideProject 2025-04, I built a free, blazing-fast AI powered SQL editor, 1 points, 6 comments
-3405307971    # 1kbfkg3 r/SideProject 2025-04, I built Mapstra – a tool that automatically creates an interactive map from your travel photos. Free to use, would love your feedback!, 16 points, 11 comments
-2898669174    # 1bxsjg6 r/webdev 2024-04, I recreated marketing M2 chip using CSS and React, 703 points, 75 comments
+2853055158 subreddit=programming    # 1b6mvg6 2024-03, 3 years of work and 1 million users later, I just open-sourced my "Internet OS", 1330 points, 141 comments
+2611669540 subreddit=selfhosted     # 176x544 2023-10, Messed around and made a GUI for container logs and configs, 10 points, 23 comments
+2637184786 subreddit=selfhosted     # 17m40sy 2023-11, I made a pocketbase dashboard for easier deployment., 5 points, 8 comments
+2647284314 subreddit=selfhosted     # 17s4hne 2023-11, I made a few small apps, available to run as docker containers..., 73 points, 16 comments
+2976079131 subreddit=selfhosted     # 1d7vpcr 2024-06, Introducing Your New Book Discovery Tool - eBookBuddy, 48 points, 13 comments
+2976550520 subreddit=selfhosted     # 1d85t2w 2024-06, Simplex Chat – fully open-source, private messenger without any user IDs (not even random numbers) – v5.8 released with private message routing, IP address protection and chat themes., 15 points, 10 comments
+3293826442 subreddit=selfhosted     # 1ih24qy 2025-02, Comic Library Utilities: v1.0 - Full Release w/ New Features & Updated UI, 39 points, 12 comments
+3294460330 subreddit=selfhosted     # 1ihfpuy 2025-02, Meelo - A Plex alternative for music collectors, 140 points, 76 comments
+3294845794 subreddit=selfhosted     # 1ihnzaa 2025-02, 🎉 Ghostboard v3.3.0 is Feature-Complete! 🎉, 125 points, 27 comments
+3295128625 subreddit=selfhosted     # 1ihu1ip 2025-02, OpenYT - Looking for more suggestions, 46 points, 12 comments
+2398402193 subreddit=SideProject    # 13ny2z5 2023-05, I built a wordle BUT for songs: Songle 🎵, 37 points, 15 comments
+2411349993 subreddit=SideProject    # 13vnlk9 2023-05, I’ve built a form builder where forms build themselves. What do you think?, 97 points, 44 comments
+2417171140 subreddit=SideProject    # 13z4d6s 2023-06, I've built a Reddit Ads Library (with more than 30,000 ads and growing), 28 points, 17 comments
+2430376439 subreddit=SideProject    # 146zegn 2023-06, I built a website to browse hundreds of AI companies and career pages, 6 points, 7 comments
+2833025105 subreddit=SideProject    # 1aupk5t 2024-02, I've built the ultimate note taking app so I'll stop texting myself everything, 22 points, 45 comments
+2836103014 subreddit=SideProject    # 1awjj3a 2024-02, I missed my gf and friends when traveling so I built an app to help keep in touch with them., 128 points, 54 comments
+2843494109 subreddit=SideProject    # 1b0xy3h 2024-02, I built a free tool that parses your emails and adds them to a todo list, 48 points, 29 comments
+2844061157 subreddit=SideProject    # 1b1a3mt 2024-02, I built an app that lets you publish docs as a full fledged website., 39 points, 37 comments
+2844512127 subreddit=SideProject    # 1b1jrlr 2024-02, I built a free one line wait list tool, 5 points, 8 comments
+3404775491 subreddit=SideProject    # 1kb45kz 2025-04, I built a free, blazing-fast AI powered SQL editor, 1 points, 6 comments
+3405307971 subreddit=SideProject    # 1kbfkg3 2025-04, I built Mapstra – a tool that automatically creates an interactive map from your travel photos. Free to use, would love your feedback!, 16 points, 11 comments
+2898669174 subreddit=webdev         # 1bxsjg6 2024-04, I recreated marketing M2 chip using CSS and React, 703 points, 75 comments

@@ -1,16 +1,17 @@
-# Reddit backtest holdout set: one id per line, parseInt(<base36 post id>, 36) because thread lists are numeric;
-# '# <base36 id> r/<subreddit> YYYY-MM, title, points, comments' (Arctic Shift, 2026-10-20).
+# Reddit backtest holdout set: one id per line, parseInt(<base36 post id>, 36) because thread lists are numeric,
+# then 'subreddit=<name>' (the prompts' subreddit for that thread);
+# '# <base36 id> YYYY-MM, title, points, comments' (Arctic Shift, 2026-10-20).
 
-2632853059    # 17jj6f7 r/selfhosted 2023-10, I made a script to remotely reflash a Raspberry Pi, 83 points, 13 comments
-2393492008    # 13l0u94 r/SideProject 2023-05, I built a Form App MVP in 15 days and Got 200 signups, 7 points, 11 comments
-2396122186    # 13ml7pm r/SideProject 2023-05, Built an OpenAI analytics dashboard!, 5 points, 6 comments
-2836891041    # 1ax0f4x r/SideProject 2024-02, I worry about my grandma living alone, so I built a daily check-in call system, 35 points, 37 comments
-2842566567    # 1b0e2ef r/SideProject 2024-02, I built a free slogan generator, 18 points, 24 comments
-2842708460    # 1b0h3vw r/SideProject 2024-02, I built an open-source dummy JSON API which receives over 20 million requests per month, 235 points, 90 comments
-3136521023    # 1fvej3z r/SideProject 2024-10, I built an end-to-end encrypted file service for the paranoid (like me), 44 points, 50 comments
-3405142898    # 1kbc12q r/SideProject 2025-04, I built a Company Profiler- would love your thoughts!, 11 points, 17 comments
-3405153082    # 1kbc8xm r/SideProject 2025-04, I built a 100% free web app for creating high-impact screenshots in 2 weeks!, 172 points, 69 comments
-3405294527    # 1kbfa2n r/SideProject 2025-04, Built a tiny app for couples & roommates to manage chores, groceries, and events — would love your honest feedback, 37 points, 23 comments
-3801310678    # 1qv7a3a r/SideProject 2026-02, I built an AI virtual staging tool because waiting for listing photos was killing deals, 2 points, 15 comments
-2898675338    # 1bxso7e r/webdev 2024-04, 2 months in the making Finished my portfolio site, 44 points, 42 comments
-3457024786    # 1l681ea r/webdev 2025-06, created a pretty cool tool, 0 points, 6 comments
+2632853059 subreddit=selfhosted     # 17jj6f7 2023-10, I made a script to remotely reflash a Raspberry Pi, 83 points, 13 comments
+2393492008 subreddit=SideProject    # 13l0u94 2023-05, I built a Form App MVP in 15 days and Got 200 signups, 7 points, 11 comments
+2396122186 subreddit=SideProject    # 13ml7pm 2023-05, Built an OpenAI analytics dashboard!, 5 points, 6 comments
+2836891041 subreddit=SideProject    # 1ax0f4x 2024-02, I worry about my grandma living alone, so I built a daily check-in call system, 35 points, 37 comments
+2842566567 subreddit=SideProject    # 1b0e2ef 2024-02, I built a free slogan generator, 18 points, 24 comments
+2842708460 subreddit=SideProject    # 1b0h3vw 2024-02, I built an open-source dummy JSON API which receives over 20 million requests per month, 235 points, 90 comments
+3136521023 subreddit=SideProject    # 1fvej3z 2024-10, I built an end-to-end encrypted file service for the paranoid (like me), 44 points, 50 comments
+3405142898 subreddit=SideProject    # 1kbc12q 2025-04, I built a Company Profiler- would love your thoughts!, 11 points, 17 comments
+3405153082 subreddit=SideProject    # 1kbc8xm 2025-04, I built a 100% free web app for creating high-impact screenshots in 2 weeks!, 172 points, 69 comments
+3405294527 subreddit=SideProject    # 1kbfa2n 2025-04, Built a tiny app for couples & roommates to manage chores, groceries, and events — would love your honest feedback, 37 points, 23 comments
+3801310678 subreddit=SideProject    # 1qv7a3a 2026-02, I built an AI virtual staging tool because waiting for listing photos was killing deals, 2 points, 15 comments
+2898675338 subreddit=webdev         # 1bxso7e 2024-04, 2 months in the making Finished my portfolio site, 44 points, 42 comments
+3457024786 subreddit=webdev         # 1l681ea 2025-06, created a pretty cool tool, 0 points, 6 comments

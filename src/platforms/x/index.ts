@@ -125,6 +125,8 @@ export function makeX(o: XOptions): Platform {
           );
         if (typeof value !== 'number' || !(value > 0))
           throw new Error(`platform.yaml: "${key}" must be a number > 0`);
+        if (key === 'linkPenalty' && value > 1)
+          throw new Error('platform.yaml: "linkPenalty" must be in (0, 1]');
         next[key as keyof XOptions] = value;
       }
       return makeX(next);

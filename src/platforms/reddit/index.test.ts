@@ -1,5 +1,6 @@
 import {
   cpSync,
+  existsSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -20,6 +21,7 @@ import type { Metrics } from '../../metrics.js';
 import type { Platform } from '../../platform.js';
 import { emptyThread, type ThreadState } from '../../thread.js';
 import type { SimEvent } from '../../types.js';
+import { parseThreadEntries } from '../../scorecard.js';
 import { loadPlatform } from '../index.js';
 
 const votes = (s: ThreadState, ups: number, downs: number): ThreadState => {
@@ -187,7 +189,34 @@ describe('reddit end to end', () => {
     expect(JSON.parse(read('run.json'))).toMatchObject({
       options: { subreddit: 'selfhosted' }
     });
+    // Personas are cached per platform; HN keeps the pre-platform seed-N.json.
+    expect(existsSync(join(seedDir, 'personas', 'reddit-seed-1.json'))).toBe(
+      true
+    );
+    expect(existsSync(join(seedDir, 'personas', 'seed-1.json'))).toBe(false);
     // The report reloads the run's platform.yaml options.
     expect(read('report.md')).toContain('# r/selfhosted rehearsal:');
+  });
+});
+
+describe('reddit backtest lists', () => {
+  it('give every thread its subreddit, which withOptions accepts', async () => {
+    for (const f of ['threads.txt', 'holdout.txt']) {
+      const entries = parseThreadEntries(
+        readFileSync(
+          new URL(
+            `../../../simulations/backtests/reddit/${f}`,
+            import.meta.url
+          ),
+          'utf8'
+        )
+      );
+      expect(entries.length).toBeGreaterThan(10);
+      for (const e of entries) {
+        expect(Object.keys(e.options)).toEqual(['subreddit']);
+        const p = await loadPlatform('reddit', e.options);
+        expect(p.voterSystem).toContain(`r/${String(e.options.subreddit)}`);
+      }
+    }
   });
 });
