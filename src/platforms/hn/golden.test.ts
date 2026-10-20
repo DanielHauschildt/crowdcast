@@ -19,6 +19,7 @@ import { interview } from '../../interview.js';
 import { LABELS } from '../../label.js';
 import { FakeLlm, type LlmRequest } from '../../llm.js';
 import { generatePersonas } from '../../personas.js';
+import type { Platform } from '../../platform.js';
 import {
   PERSONAS_FILE,
   RUN_FILE,
@@ -26,6 +27,7 @@ import {
   type RunMeta
 } from '../../report.js';
 import type { PersonaSet, SimEvent } from '../../types.js';
+import { loadPlatform } from '../index.js';
 
 const GOLDEN_FILE = fileURLToPath(
   new URL('./golden-events.jsonl', import.meta.url)
@@ -134,7 +136,7 @@ const goldenPersonas: PersonaSet = {
   voters: Array.from({ length: 45 }, (_, i) => makeVoter(i + 1))
 };
 
-async function goldenRun(): Promise<SimEvent[]> {
+async function goldenRun(platform?: Platform): Promise<SimEvent[]> {
   const res = await runSimulation({
     post: makePost({ firstComment: 'Hi HN, I built this.' }),
     seed: makeSeed(),
@@ -142,7 +144,8 @@ async function goldenRun(): Promise<SimEvent[]> {
     llm: new FakeLlm(goldenWorld),
     rngSeed: 3,
     runDir: mkdtempSync(join(tmpdir(), 'golden-')),
-    maxErrorRate: 1
+    maxErrorRate: 1,
+    platform
   });
   return res.events;
 }
@@ -215,6 +218,12 @@ async function goldenPrompts(): Promise<string[]> {
 describe('HN golden run', () => {
   it('produces the same events as before the platform refactor', async () => {
     expect(await goldenRun()).toEqual(readEvents(GOLDEN_FILE));
+  });
+
+  it('is the same when hn is loaded by id', async () => {
+    expect(await goldenRun(await loadPlatform('hn'))).toEqual(
+      readEvents(GOLDEN_FILE)
+    );
   });
 
   it('sends byte-identical prompts and schemas', async () => {

@@ -1,5 +1,8 @@
 import { FOUNDER, type Post, type SimEvent } from './types.js';
 
+// Moved to the HN platform; re-exported for callers of the old path.
+export { flamewarFactor, rankScore } from './platforms/hn/rank.js';
+
 /** Deepest rendered depth; replies below are collapsed into a count. */
 export const MAX_DEPTH = 4;
 
@@ -72,14 +75,15 @@ export function applyEvent(s: ThreadState, e: SimEvent): void {
     case 'vote': {
       const key = `${e.voter}|${e.target}`;
       if (s.voted.has(key)) return;
+      // 'flag' counts against the target; every other reaction counts for it.
       if (e.target === 'post') {
-        if (e.value === 'up') s.postUps++;
-        else s.postFlags++;
+        if (e.value === 'flag') s.postFlags++;
+        else s.postUps++;
       } else {
         const c = s.comments.get(e.target);
         if (!c || c.author === e.voter) return;
-        if (e.value === 'up') c.ups++;
-        else c.flags++;
+        if (e.value === 'flag') c.flags++;
+        else c.ups++;
       }
       s.voted.add(key);
       return;
@@ -99,32 +103,6 @@ export function replay(post: Post, events: readonly SimEvent[]): ThreadState {
   const s = emptyThread(post);
   for (const e of events) applyEvent(s, e);
   return s;
-}
-
-/** HN-style ranking: (points − 1) / (age + 2)^1.8, damped 20% per flag. */
-export function rankScore(
-  points: number,
-  ageHours: number,
-  flags: number
-): number {
-  return (
-    (Math.max(points - 1, 0) / Math.pow(ageHours + 2, 1.8)) *
-    Math.pow(0.8, flags)
-  );
-}
-
-/** HN's flamewar detector: > 40 comments and more comments than points costs 40% of the rank. */
-export function flamewarFactor(points: number, comments: number): number {
-  return comments > 40 && comments > points ? 0.6 : 1;
-}
-
-/** The post's rank score at `ageHours`, flamewar penalty included. */
-export function postRankScore(s: ThreadState, ageHours: number): number {
-  const points = postPoints(s);
-  return (
-    rankScore(points, ageHours, s.postFlags) *
-    flamewarFactor(points, liveComments(s).length)
-  );
 }
 
 /** The submitter's own vote counts, as on HN. */

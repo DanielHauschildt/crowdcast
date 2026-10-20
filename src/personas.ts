@@ -1,6 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { Llm } from './llm.js';
+import type { Platform } from './platform.js';
+import hn from './platforms/hn/index.js';
 import type {
   Persona,
   PersonaSet,
@@ -124,34 +126,19 @@ function isRawPersona(x: unknown): x is RawPersona {
   );
 }
 
-const PERSONA_SYSTEM =
-  'You create realistic Hacker News user personas for a social simulation. Personas must be ' +
-  'specific and believable — real HN regulars, not caricatures. Vary seniority, location, ' +
-  'employer type and writing style. Spread aiAttitude across the plausible range for the ' +
-  'segment; never make everyone hostile or everyone enthusiastic.';
-
-const VOTER_SYSTEM =
-  'You create one-line profiles of Hacker News readers who mostly lurk and vote. Make them ' +
-  'diverse and concrete (role, stack, what they care about).';
-
 async function personaChunk(
   llm: Llm,
+  platform: Platform,
   seg: Segment,
   count: number,
   i: number
 ): Promise<RawPersona[]> {
   const res = await llm.call({
     tier: 'opus',
-    system: PERSONA_SYSTEM,
+    system: platform.personaSystem,
     label: `personas:${seg.id}:${i}`,
     schema: PERSONA_SCHEMA,
-    prompt:
-      `Segment: ${seg.id}\nTypical leanings: ${seg.leanings}\n\n` +
-      `They browse Show HN regularly. Create exactly ${count} personas from this segment.\n` +
-      'activity = chance (0–1) they engage when they open a thread. contrarian = tendency ' +
-      '(0–1) to push back. aiAttitude = -2 hostile … 2 enthusiastic about AI tools. ' +
-      'verbosity = 1 terse … 3 long-winded. voiceSample = one realistic HN comment (1–3 ' +
-      'sentences) in their style on any tech topic.',
+    prompt: platform.personaPrompt(seg, count),
     validate: (x): x is { personas: RawPersona[] } => {
       const ps = (x as { personas?: unknown }).personas;
       return Array.isArray(ps) && ps.length >= count && ps.every(isRawPersona);
@@ -166,13 +153,14 @@ async function personaChunk(
 
 async function voterChunk(
   llm: Llm,
+  platform: Platform,
   seg: Segment,
   count: number,
   i: number
 ): Promise<string[]> {
   const res = await llm.call({
     tier: 'opus',
-    system: VOTER_SYSTEM,
+    system: platform.voterPersonaSystem,
     label: `voter-profiles:${seg.id}:${i}`,
     schema: VOTER_SCHEMA,
     prompt: `Segment: ${seg.id}\nTypical leanings: ${seg.leanings}\n\nCreate exactly ${count} one-line reader profiles.`,
@@ -192,14 +180,18 @@ async function voterChunk(
   return res.value.voters.slice(0, count).map((v) => v.oneLiner);
 }
 
-export async function generateVoters(llm: Llm, seed: Seed): Promise<Voter[]> {
+export async function generateVoters(
+  llm: Llm,
+  seed: Seed,
+  platform: Platform = hn
+): Promise<Voter[]> {
   const alloc = allocate(seed.segments, seed.voterCount);
   const perSegment = await Promise.all(
     seed.segments.map(async (seg) =>
       (
         await Promise.all(
           chunks(alloc.get(seg.id)!, VOTER_CHUNK).map((n, i) =>
-            voterChunk(llm, seg, n, i)
+            voterChunk(llm, platform, seg, n, i)
           )
         )
       )
@@ -212,7 +204,8 @@ export async function generateVoters(llm: Llm, seed: Seed): Promise<Voter[]> {
 
 export async function generatePersonas(
   llm: Llm,
-  seed: Seed
+  seed: Seed,
+  platform: Platform = hn
 ): Promise<PersonaSet> {
   const active = allocate(seed.segments, seed.activeCount);
   const [perSegment, voters] = await Promise.all([
@@ -222,13 +215,13 @@ export async function generatePersonas(
         raw: (
           await Promise.all(
             chunks(active.get(seg.id)!, PERSONA_CHUNK).map((n, i) =>
-              personaChunk(llm, seg, n, i)
+              personaChunk(llm, platform, seg, n, i)
             )
           )
         ).flat()
       }))
     ),
-    generateVoters(llm, seed)
+    generateVoters(llm, seed, platform)
   ]);
   const personas: Persona[] = [];
   const handles = new Set<string>();
@@ -260,11 +253,12 @@ export async function generatePersonas(
 export async function loadOrGeneratePersonas(
   llm: Llm,
   seed: Seed,
-  cacheFile: string
+  cacheFile: string,
+  platform: Platform = hn
 ): Promise<PersonaSet> {
   if (existsSync(cacheFile))
     return JSON.parse(readFileSync(cacheFile, 'utf8')) as PersonaSet;
-  const set = await generatePersonas(llm, seed);
+  const set = await generatePersonas(llm, seed, platform);
   mkdirSync(dirname(cacheFile), { recursive: true });
   writeFileSync(cacheFile, JSON.stringify(set, null, 2));
   return set;

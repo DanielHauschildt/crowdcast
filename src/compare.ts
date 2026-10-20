@@ -1,6 +1,6 @@
 import type { Llm } from './llm.js';
 import { computeMetrics, type Metrics } from './metrics.js';
-import { DISCLAIMER, ensureLabels, loadRun } from './report.js';
+import { DISCLAIMER, ensureLabels, loadRun, runPlatform } from './report.js';
 import { commentScore, replay, topComments } from './thread.js';
 import { FOUNDER } from './types.js';
 
@@ -18,7 +18,7 @@ export async function summarizeRun(
   variant: string,
   index: number
 ): Promise<RunSummary> {
-  const { events, personas, post } = loadRun(runDir);
+  const { meta, events, personas, post } = loadRun(runDir);
   const labels = await ensureLabels(llm, runDir);
   const state = replay(post, events);
   const top = topComments(state, 10)
@@ -29,7 +29,7 @@ export async function summarizeRun(
     variant,
     index,
     runDir,
-    metrics: computeMetrics(events, labels, personas),
+    metrics: computeMetrics(events, labels, personas, await runPlatform(meta)),
     topComments: top
   };
 }

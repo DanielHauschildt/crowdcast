@@ -16,6 +16,8 @@ import {
 import { estimateCalls, runSimulation } from './engine.js';
 import { EVENTS_FILE, readEvents } from './events.js';
 import { BudgetExceeded, FakeLlm, LlmFatal, type LlmRequest } from './llm.js';
+import type { Platform } from './platform.js';
+import hn from './platforms/hn/index.js';
 import type { PersonaSet, SimEvent } from './types.js';
 
 const personas: PersonaSet = {
@@ -244,5 +246,65 @@ describe('estimateCalls', () => {
     const b = estimateCalls(personas, 12);
     expect(b.total).toBeGreaterThan(a.total);
     expect(b.founder).toBe(12);
+  });
+});
+
+describe('a non-HN platform', () => {
+  it('runs on its own step length, vocabulary and visibility', async () => {
+    const ages: number[] = [];
+    const authors: unknown[] = [];
+    const fake: Platform = {
+      ...hn,
+      id: 'fake',
+      stepMinutes: 30,
+      defaultSteps: 4,
+      bands: ['feed'],
+      frontPage: ['feed'],
+      votes: ['like', 'none'],
+      commentVote: 'like',
+      visibility: (_s, _step, author) => {
+        authors.push(author);
+        return { band: 'feed', visitorFraction: 1 };
+      },
+      rankScore: (s, age) => {
+        ages.push(age);
+        return s.postUps;
+      }
+    };
+    const llm = new FakeLlm((req) => {
+      if (req.label.startsWith('agent:'))
+        return {
+          vote: 'like',
+          upvoteComments: ['c1'],
+          comment: null,
+          leave: false
+        };
+      if (req.label.startsWith('voters:'))
+        return {
+          ballots: [...req.prompt.matchAll(/- (v\d+):/g)].map((m) => ({
+            voterId: m[1],
+            postVote: 'like',
+            commentVotes: [{ id: 'c1', vote: 'like' }]
+          }))
+        };
+      return world()(req);
+    });
+    const res = await runSimulation({
+      post: makePost({ firstComment: 'Hello.' }),
+      seed: makeSeed({ author: { followers: 500 } }),
+      personas,
+      llm,
+      rngSeed: 1,
+      runDir: dir(),
+      platform: fake
+    });
+    expect(res.aborted).toBeNull();
+    expect(ends(res.events).map((e) => e.band)).toEqual(Array(4).fill('feed'));
+    expect(ages.slice(0, 2)).toEqual([0.5, 1]);
+    expect(authors[0]).toEqual({ followers: 500 });
+    const votes = res.events.filter((e) => e.kind === 'vote');
+    expect(votes.length).toBeGreaterThan(0);
+    expect(votes.every((e) => e.value === 'like')).toBe(true);
+    expect(JSON.stringify(llm.requests[0]!.schema)).toContain('"like"');
   });
 });

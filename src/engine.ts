@@ -4,13 +4,14 @@ import { agentTurn } from './agents.js';
 import { EVENTS_FILE, readEvents } from './events.js';
 import { founderTurn, pickFounderReplies } from './founder.js';
 import { BudgetExceeded, LlmFatal, type Llm } from './llm.js';
+import type { Author, Platform } from './platform.js';
+import hn from './platforms/hn/index.js';
 import { rngFor } from './rng.js';
-import { ageHours, bandFor, DEFAULT_STEPS, planVisits } from './schedule.js';
+import { ageHours, planVisits } from './schedule.js';
 import {
   applyEvent,
   newCommentId,
   postPoints,
-  postRankScore,
   renderThread,
   replay,
   topComments,
@@ -40,6 +41,11 @@ export interface RunConfig {
   llm: Llm;
   rngSeed: number;
   runDir: string;
+  /** Default: HN. */
+  platform?: Platform;
+  /** Default: the seed's. */
+  author?: Author;
+  /** Default: the platform's. */
   steps?: number;
   maxErrorRate?: number;
   onStep?: (e: StepEnd) => void;
@@ -57,7 +63,9 @@ const chunk = <T>(xs: readonly T[], n: number): T[][] =>
   );
 
 export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
-  const steps = cfg.steps ?? DEFAULT_STEPS;
+  const platform = cfg.platform ?? hn;
+  const author = cfg.author ?? cfg.seed.author;
+  const steps = cfg.steps ?? platform.defaultSteps;
   const maxErrorRate = cfg.maxErrorRate ?? 0.1;
   const file = join(cfg.runDir, EVENTS_FILE);
   mkdirSync(cfg.runDir, { recursive: true });
@@ -110,11 +118,9 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
     };
 
     try {
-      const band = bandFor(postRankScore(state, ageHours(step)));
       const plan = planVisits({
         rng: rngFor(cfg.rngSeed, step),
-        band,
-        step,
+        fraction: platform.visibility(state, step, author).visitorFraction,
         personas: cfg.personas.personas,
         voters: cfg.personas.voters,
         state
@@ -131,7 +137,8 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
             thread: view,
             ownComments: [...state.comments.values()].filter(
               (c) => c.author === persona.id
-            )
+            ),
+            platform
           })
         )
       );
@@ -151,7 +158,13 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
           });
         for (const id of a.upvoteComments) {
           if (state.comments.has(id))
-            emit({ kind: 'vote', step, voter: p.id, target: id, value: 'up' });
+            emit({
+              kind: 'vote',
+              step,
+              voter: p.id,
+              target: id,
+              value: platform.commentVote
+            });
         }
         if (a.comment?.text.trim()) {
           const parent = state.comments.has(a.comment.parent)
@@ -179,7 +192,8 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
             post: state.post,
             context: cfg.seed.context,
             comments: shown,
-            batch: step * 100 + i
+            batch: step * 100 + i,
+            platform
           })
         )
       );
@@ -218,7 +232,8 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
         post: state.post,
         founderAnswers: cfg.seed.founderAnswers,
         thread: renderThread(state, { maxChars: RENDER_CHARS }),
-        step
+        step,
+        platform
       });
       if (!fr.ok) fail(FOUNDER, fr.error);
       else {
@@ -241,12 +256,14 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
       throw err;
     }
 
-    const score = postRankScore(state, ageHours(step + 1));
     const end: StepEnd = {
       kind: 'step-end',
       step,
-      score,
-      band: bandFor(score),
+      score: platform.rankScore(
+        state,
+        ageHours(step + 1, platform.stepMinutes)
+      ),
+      band: platform.visibility(state, step + 1, author).band,
       points: postPoints(state),
       flags: state.postFlags,
       calls,

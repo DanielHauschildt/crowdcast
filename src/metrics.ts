@@ -1,5 +1,6 @@
 import type { CommentLabel, Label } from './label.js';
-import { BAND_ORDER } from './schedule.js';
+import type { Platform } from './platform.js';
+import hn from './platforms/hn/index.js';
 import { replay, type ThreadState } from './thread.js';
 import {
   FOUNDER,
@@ -51,7 +52,8 @@ function descendants(s: ThreadState, id: string): string[] {
 export function computeMetrics(
   events: readonly SimEvent[],
   labels: readonly CommentLabel[],
-  personas: PersonaSet
+  personas: PersonaSet,
+  platform: Platform = hn
 ): Metrics {
   const postEvent = events.find((e) => e.kind === 'post');
   const post: Post =
@@ -110,10 +112,10 @@ export function computeMetrics(
       return { replyId: reply.id, parentId: reply.parent, delta, verdict };
     });
 
+  const rank = (b: Band): number => platform.bands.indexOf(b);
   const peakBand = ends.reduce<Band>(
-    (best, e) =>
-      BAND_ORDER.indexOf(e.band) < BAND_ORDER.indexOf(best) ? e.band : best,
-    'new'
+    (best, e) => (rank(e.band) < rank(best) ? e.band : best),
+    platform.bands.at(-1)!
   );
   const votes = s.postUps + s.postFlags;
   const abort = events.find((e) => e.kind === 'abort');
@@ -126,7 +128,7 @@ export function computeMetrics(
       flags: e.flags
     })),
     peakBand,
-    frontPage: peakBand === 'top10' || peakBand === 'top30',
+    frontPage: platform.frontPage.includes(peakBand),
     finalPoints: 1 + s.postUps,
     comments: crowd.length,
     founderReplies: comments.filter((c) => c.author === FOUNDER).length,

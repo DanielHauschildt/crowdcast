@@ -4,16 +4,15 @@ import { makePost } from '../test/fixtures.js';
 import {
   applyEvent,
   emptyThread,
-  flamewarFactor,
   isDead,
-  postRankScore,
-  rankScore,
   renderThread,
   replay,
   topComments,
   unseenReplies,
   type ThreadState
 } from './thread.js';
+import { postRankScore } from './platforms/hn/index.js';
+import { flamewarFactor, rankScore } from './platforms/hn/rank.js';
 import type { SimEvent } from './types.js';
 
 const comment = (

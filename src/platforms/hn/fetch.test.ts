@@ -4,9 +4,9 @@ import {
   fetchThread,
   githubRepo,
   MAX_CONTEXT_CHARS,
-  stripHtml,
-  type FetchFn
-} from './hn.js';
+  stripHtml
+} from './fetch.js';
+import type { FetchFn } from '../../platform.js';
 
 const item = (over: Record<string, unknown> = {}) => ({
   id: 100,

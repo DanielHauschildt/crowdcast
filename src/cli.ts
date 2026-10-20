@@ -12,15 +12,16 @@ import type { FetchFn } from './hn-users.js';
 import { interview } from './interview.js';
 import { ClaudeCli, type Llm } from './llm.js';
 import { loadOrGeneratePersonas } from './personas.js';
+import type { Platform } from './platform.js';
+import { loadPlatform } from './platforms/index.js';
 import {
   PERSONAS_FILE,
   RUN_FILE,
   writeReport,
   type RunMeta
 } from './report.js';
-import { DEFAULT_STEPS } from './schedule.js';
 import { loadPost, loadSeed } from './seed.js';
-import type { PersonaSet } from './types.js';
+import type { PersonaSet, Seed } from './types.js';
 
 export interface CliDeps {
   makeLlm: (opts: {
@@ -41,8 +42,9 @@ const defaults: CliDeps = {
 
 const USAGE = `usage:
   crowdcast run <seedDir> [--variant default] [--seed 1] [--persona-seed N] [--runs 1]
-                [--steps 12] [--max-calls 400] [--concurrency 8] [--dry-run] [--no-report]
-                [--resume <runDir>] [--persona-file <path>]
+                [--steps <platform default, hn 12>] [--max-calls 400] [--concurrency 8]
+                [--dry-run] [--no-report] [--resume <runDir>] [--persona-file <path>]
+                [--platform <id, default from platform.yaml or hn>]
   crowdcast compare <seedDir> --variants a,b[,c] [--runs 3] [--parallel 3] [same options as run]
   crowdcast report <runDir>
   crowdcast interview <runDir> <personaId|handle|segment> "<question>"
@@ -68,7 +70,8 @@ const OPTIONS = {
   'persona-seed': { type: 'string' },
   runs: { type: 'string' },
   parallel: { type: 'string', default: '3' },
-  steps: { type: 'string', default: String(DEFAULT_STEPS) },
+  steps: { type: 'string' },
+  platform: { type: 'string' },
   'max-calls': { type: 'string', default: '400' },
   concurrency: { type: 'string', default: '8' },
   'dry-run': { type: 'boolean', default: false },
@@ -83,6 +86,9 @@ type Values = ReturnType<
   typeof parseArgs<{ options: typeof OPTIONS; allowPositionals: true }>
 >['values'];
 
+const seedPlatform = (seed: Seed, v: Values): Promise<Platform> =>
+  loadPlatform(v.platform ?? seed.platform, seed.options);
+
 async function loadPersonas(
   deps: CliDeps,
   seedDir: string,
@@ -96,7 +102,8 @@ async function loadPersonas(
   return loadOrGeneratePersonas(
     deps.makeLlm({ concurrency: Number(v.concurrency), logFile: undefined }),
     seed,
-    join(seed.dir, 'personas', `seed-${personaSeed}.json`)
+    join(seed.dir, 'personas', `seed-${personaSeed}.json`),
+    await seedPlatform(seed, v)
   );
 }
 
@@ -109,9 +116,10 @@ async function runOne(
 ): Promise<string> {
   const seed = loadSeed(seedDir);
   const post = loadPost(seed, variant);
+  const platform = await seedPlatform(seed, v);
   const rngSeed = Number(v.seed);
   const personaSeed = Number(v['persona-seed'] ?? v.seed);
-  const steps = Number(v.steps);
+  const steps = Number(v.steps ?? platform.defaultSteps);
   const concurrency = Number(v.concurrency);
   const personas = await loadPersonas(deps, seedDir, v);
 
@@ -127,6 +135,7 @@ async function runOne(
     : join(runsRoot, runDirName(deps.now(), seed.name, variant, index));
   mkdirSync(runDir, { recursive: true });
   const meta: RunMeta = {
+    platform: platform.id,
     seedName: seed.name,
     variant,
     rngSeed: rngSeed + index - 1,
@@ -154,6 +163,7 @@ async function runOne(
     rngSeed: meta.rngSeed,
     runDir,
     steps,
+    platform,
     onStep: (e) =>
       deps.log(
         `  ${variant} r${index} step ${e.step + 1}/${steps}: ${e.points} points, band ${e.band}, ${e.calls} calls (${e.failed} failed)`
