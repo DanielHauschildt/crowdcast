@@ -172,7 +172,7 @@ export function scorecardMarkdown(
     '',
     '## Per thread',
     '',
-    `| HN id | Title | Real points | Sim points @ ${h} | Real comments | Sim comments | Ratio | Recall | TV | Sentiment real / sim | Status |`,
+    `| Thread id | Title | Real points | Sim points @ ${h} | Real comments | Sim comments | Ratio | Recall | TV | Sentiment real / sim | Status |`,
     '|---|---|---|---|---|---|---|---|---|---|---|',
     ...scores.map(
       (s) =>

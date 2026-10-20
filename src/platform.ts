@@ -73,6 +73,8 @@ export interface Platform {
   labelSystem: string;
   reportSystem: string;
   reportTitle(post: Post): string;
+  /** Sentence appended to the shared disclaimer on reports and thread.md, e.g. for unvalidated platforms. */
+  disclaimer?: string;
   /** Backtest: theme extraction from the real thread and recall judging. */
   themesSystem: string;
   recallSystem: string;

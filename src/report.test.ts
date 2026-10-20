@@ -10,6 +10,7 @@ import {
   PERSONAS_FILE,
   RUN_FILE,
   citedIds,
+  disclaimerFor,
   writeReport,
   type RunMeta
 } from './report.js';
@@ -90,6 +91,15 @@ describe('citedIds', () => {
   });
 });
 
+describe('disclaimerFor', () => {
+  it('appends the platform sentence to the shared disclaimer', () => {
+    expect(disclaimerFor({})).toBe(DISCLAIMER);
+    expect(disclaimerFor({ disclaimer: 'Not validated.' })).toBe(
+      `${DISCLAIMER} Not validated.`
+    );
+  });
+});
+
 describe('writeReport', () => {
   it('writes all derived files with the disclaimer on line 1', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'rep-'));
@@ -101,6 +111,9 @@ describe('writeReport', () => {
     expect(md).toContain('vs-image-gen');
     for (const f of ['thread.md', 'labels.json', 'metrics.json'])
       expect(existsSync(join(dir, f))).toBe(true);
+    expect(readFileSync(join(dir, 'thread.md'), 'utf8').split('\n')[0]).toBe(
+      DISCLAIMER
+    );
     expect(llm.requests.find((r) => r.label === 'report')!.tier).toBe('opus');
   });
 

@@ -11,6 +11,10 @@ import { FOUNDER, type PersonaSet, type Post, type SimEvent } from './types.js';
 
 export const DISCLAIMER =
   '**Synthetic LLM simulation — hypotheses, not a forecast.**';
+export const disclaimerFor = (
+  platform: Pick<Platform, 'disclaimer'>
+): string =>
+  platform.disclaimer ? `${DISCLAIMER} ${platform.disclaimer}` : DISCLAIMER;
 export const RUN_FILE = 'run.json';
 export const PERSONAS_FILE = 'personas.json';
 
@@ -120,7 +124,7 @@ export function assembleReport(
     {}
   );
   return [
-    DISCLAIMER,
+    disclaimerFor(platform),
     '',
     `# ${platform.reportTitle(post)}`,
     '',
@@ -173,7 +177,7 @@ export async function writeReport(llm: Llm, runDir: string): Promise<string> {
   const thread = renderThread(state);
   writeFileSync(
     join(runDir, 'thread.md'),
-    `${DISCLAIMER}\n\n\`\`\`text\n${thread}\n\`\`\`\n`
+    `${disclaimerFor(platform)}\n\n\`\`\`text\n${thread}\n\`\`\`\n`
   );
   const labels = await ensureLabels(llm, runDir);
   const metrics = computeMetrics(events, labels, personas, platform);

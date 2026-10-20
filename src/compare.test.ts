@@ -24,6 +24,7 @@ const run = (variant: string, index: number, points: number): RunSummary => ({
   index,
   runDir: `/r/${variant}-${index}`,
   metrics: metrics(points),
+  disclaimer: DISCLAIMER,
   topComments: [{ id: 'c1', text: 'top comment', score: 4 }]
 });
 
@@ -57,5 +58,12 @@ describe('compareMarkdown', () => {
     expect(md).toContain('## a');
     expect(md).toContain('## b');
     expect(md).toContain('Consistent best by final points: **a**');
+  });
+
+  it("opens with the runs' platform disclaimer", () => {
+    const md = compareMarkdown('seed', [
+      { ...run('a', 1, 10), disclaimer: `${DISCLAIMER} Not validated.` }
+    ]);
+    expect(md.split('\n')[0]).toBe(`${DISCLAIMER} Not validated.`);
   });
 });

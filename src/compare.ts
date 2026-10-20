@@ -1,6 +1,12 @@
 import type { Llm } from './llm.js';
 import { computeMetrics, type Metrics } from './metrics.js';
-import { DISCLAIMER, ensureLabels, loadRun, runPlatform } from './report.js';
+import {
+  DISCLAIMER,
+  disclaimerFor,
+  ensureLabels,
+  loadRun,
+  runPlatform
+} from './report.js';
 import { commentScore, replay, topComments } from './thread.js';
 import { FOUNDER } from './types.js';
 
@@ -9,6 +15,8 @@ export interface RunSummary {
   index: number;
   runDir: string;
   metrics: Metrics;
+  /** The run platform's disclaimer line. */
+  disclaimer: string;
   topComments: Array<{ id: string; text: string; score: number }>;
 }
 
@@ -21,6 +29,7 @@ export async function summarizeRun(
   const { meta, events, personas, post } = loadRun(runDir);
   const labels = await ensureLabels(llm, runDir);
   const state = replay(post, events);
+  const platform = await runPlatform(meta);
   const top = topComments(state, 10)
     .filter((c) => c.author !== FOUNDER)
     .slice(0, 3)
@@ -29,7 +38,8 @@ export async function summarizeRun(
     variant,
     index,
     runDir,
-    metrics: computeMetrics(events, labels, personas, await runPlatform(meta)),
+    metrics: computeMetrics(events, labels, personas, platform),
+    disclaimer: disclaimerFor(platform),
     topComments: top
   };
 }
@@ -72,7 +82,7 @@ export function compareMarkdown(
     return `Consistent best by ${name}: ${w ? `**${w}**` : 'none (differs between runs — treat as noise)'}`;
   };
   const lines = [
-    DISCLAIMER,
+    runs[0]?.disclaimer ?? DISCLAIMER,
     '',
     `# Variant comparison: ${seedName}`,
     '',

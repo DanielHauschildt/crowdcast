@@ -210,6 +210,7 @@ describe('scorecardMarkdown', () => {
     expect(md.split('\n')[0]).toBe(DISCLAIMER);
     expect(md).toContain('points @ 2h');
     expect(md).toContain('| 1 | Show HN: T1 | 10 | 2 |');
+    expect(md).toContain('| Thread id | Title |');
     expect(md).toContain('aborted: budget');
     expect(md).toContain('- ✓ pricing');
     expect(md).toContain('- ✗ perf');
