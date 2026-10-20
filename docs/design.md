@@ -96,6 +96,25 @@ Silent voter: `{id, segment, oneLiner}`; votes only.
 Personas are generated once per (seed folder, persona-seed) and cached in `personas.json`;
 variants of one compare share the same personas.
 
+## Platforms
+
+The engine is platform-neutral; everything a platform changes lives behind `Platform`
+(`src/platform.ts`): step length and default steps, `visibility(state, step, author?)` → band and
+visitor fraction, `rankScore` for step ends, the bands best first (for peak band / front page), the
+reaction vocabulary (`votes`, `commentVote`) and every prompt piece (agent, voter, founder,
+persona, label, report, backtest themes/recall). Votes keep their event shape; `value` is the
+platform's reaction (HN: `up`/`flag`; `flag` counts against a target, any other reaction for it).
+Optional: `fetchReference(id)` for backtests, `withOptions` for extra platform.yaml keys.
+
+HN (`src/platforms/hn/`) is the default and the reference implementation; its golden test pins
+events and prompt hashes. A seed picks a platform with an optional `platform.yaml`
+(`platform: hn`, `author: {followers, audience}`, other keys → options); `--platform` on
+`run`/`compare` overrides it, and `run.json` records it (older runs without it are HN).
+
+To add one: create `src/platforms/<id>/index.ts` with a default-exported `Platform`. No shared file
+changes — `loadPlatform(id)` (`src/platforms/index.ts`) imports the folder dynamically and lists the
+known folders when an id is missing.
+
 ## Simulation loop
 
 12 steps × 20 simulated minutes (first 4 hours). Deterministic scheduling from `--seed`; LLM text
