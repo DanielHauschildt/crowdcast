@@ -1,0 +1,5 @@
+# Backtest history
+
+| Stamp | Steps | Seed | Completed | Recall [90%] | TV [90%] | Spearman | Comment ratio | Sentiment gap | Note | Comment ratio geo. [90%] | Set | n |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 20261020-1912 | 8 | 7 | 6 | 14% [0%–33%] | 0.65 [0.40–0.92] | 0.66 | 0.15 | -0.37 | baseline: as landed (real author followers) | 0.09 [0.03–0.25] | train | 8 |
