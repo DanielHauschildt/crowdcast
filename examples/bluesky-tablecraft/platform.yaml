@@ -1,0 +1,6 @@
+platform: bluesky
+author:
+  followers: 2000
+  audience: data and Rust developers who follow the maker
+# Real people the simulated crowd stands for: active + voters in segments.yaml.
+audiencePool: 190

@@ -1,0 +1,15 @@
+# Bluesky holdout set: "<threadId(at-uri)>  # <at-uri>  # likes/reposts/quotes/replies, date" (AppView, 2026-10-20).
+# Launch/release posts by dev-tool makers. No handles or text here; the fetched threads are cached under threads/ (gitignored).
+
+445926033  # at://did:plc:6ghuqrvcbgc7nm6nvzaedhin/app.bsky.feed.post/3mrpmpmnffu2i  # 21/0/0/0, 2026-07-28
+1825296959  # at://did:plc:6kf6jxl44h34mprhykvqljcx/app.bsky.feed.post/3mgpujaj5pt2x  # 246/52/21/6, 2026-03-10
+984712036  # at://did:plc:gk6iy3ilby43riczukhq6mq2/app.bsky.feed.post/3muk3mpttta2d  # 177/18/8/3, 2026-09-02
+245896243  # at://did:plc:m2jwplpernhxkzbo4ev5ljwj/app.bsky.feed.post/3mcgbsqaamk25  # 53/11/4/0, 2026-01-15
+2631132912  # at://did:plc:kft6lu4trxowqmter2b6vg6z/app.bsky.feed.post/3msc7zqolvk2b  # 75/9/0/4, 2026-08-05
+3989168887  # at://did:plc:5eh75lr7s6yspmxrmbzqki3n/app.bsky.feed.post/3ma47z4mzsc2r  # 29/1/1/1, 2025-12-16
+2910941269  # at://did:plc:jh3gxnjkdilqztis6mqlvkp7/app.bsky.feed.post/3mufswuk6xk2p  # 35/7/0/2, 2026-08-31
+653495185  # at://did:plc:rnqol7ddqwydvhnxhe6xhlml/app.bsky.feed.post/3la7wkdlqf42k  # 30/2/0/2, 2024-11-05
+1877743671  # at://did:plc:7e35udbkgnds26f2yhc4vfvu/app.bsky.feed.post/3mu6soesqnc2g  # 49/10/3/0, 2026-08-29
+3951638553  # at://did:plc:7e35udbkgnds26f2yhc4vfvu/app.bsky.feed.post/3mp7kwtdv2s2p  # 15/2/0/0, 2026-06-26
+758801994  # at://did:plc:igwrpgflzixw5ucvit27yo2k/app.bsky.feed.post/3mfu4awhnjc26  # 113/16/2/3, 2026-02-27
+1611336993  # at://did:plc:z4lutgunglpmgcbawqnckkfm/app.bsky.feed.post/3lsefxbt6zk2e  # 24/5/2/3, 2025-06-24

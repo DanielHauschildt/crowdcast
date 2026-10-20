@@ -1,0 +1,19 @@
+# General Bluesky dev/tech audience for backtests: the same crowd meets every launch post.
+active: 100
+voters: 150
+segments:
+  - id: builders
+    share: 0.30
+    leanings: working developers who follow tool makers; like and repost releases they would use; ask short how-to questions
+  - id: maintainers
+    share: 0.20
+    leanings: open-source maintainers and framework authors; congratulate peers, quote-post with comparisons to their own tools
+  - id: skeptics
+    share: 0.15
+    leanings: senior engineers wary of hype and AI wrappers; brief "why not X" replies, rarely repost
+  - id: enthusiasts
+    share: 0.20
+    leanings: early adopters; emoji replies, repost everything new, request features
+  - id: drive-by
+    share: 0.15
+    leanings: one-liners, jokes, memes, tangents

@@ -1,0 +1,35 @@
+# Bluesky train set: "<threadId(at-uri)>  # <at-uri>  # likes/reposts/quotes/replies, date" (AppView, 2026-10-20).
+# Launch/release posts by dev-tool makers. No handles or text here; the fetched threads are cached under threads/ (gitignored).
+
+1000377856  # at://did:plc:76vf7xzncfaxw3m6qemqpmj4/app.bsky.feed.post/3lgecxvw7xk23  # 114/20/3/1, 2025-01-22
+645496726  # at://did:plc:76vf7xzncfaxw3m6qemqpmj4/app.bsky.feed.post/3lxkncsegxc2s  # 56/1/2/4, 2025-08-29
+1184816855  # at://did:plc:dijfw5anky2izdhc2y6hi73g/app.bsky.feed.post/3lxgow467gc2c  # 134/66/6/5, 2025-08-28
+4208777592  # at://did:plc:dijfw5anky2izdhc2y6hi73g/app.bsky.feed.post/3mkl2qxl7es2h  # 32/4/0/0, 2026-04-28
+2694430158  # at://did:plc:h4nlizncnhhcq7mwpz3uuvzk/app.bsky.feed.post/3mtys3ryp722l  # 167/7/4/6, 2026-08-26
+3856675870  # at://did:plc:h4nlizncnhhcq7mwpz3uuvzk/app.bsky.feed.post/3mukkcqvfoh2a  # 62/4/0/5, 2026-09-02
+3637538019  # at://did:plc:b6gbde64ngpelprsvnphc2l2/app.bsky.feed.post/3lvc2ioiqjc2n  # 79/14/2/1, 2025-07-31
+2835964647  # at://did:plc:b6gbde64ngpelprsvnphc2l2/app.bsky.feed.post/3mci47hz4vs2q  # 71/20/4/1, 2026-01-15
+3349659135  # at://did:plc:w6tkoftieonb5txddj5z5mzs/app.bsky.feed.post/3moxdyha4pk2l  # 200/35/6/1, 2026-06-23
+2827372461  # at://did:plc:w6tkoftieonb5txddj5z5mzs/app.bsky.feed.post/3mruvhjkc222a  # 69/13/1/3, 2026-07-30
+4057594259  # at://did:plc:6ghuqrvcbgc7nm6nvzaedhin/app.bsky.feed.post/3m3wwplq2kr2q  # 123/19/10/5, 2025-10-24
+1861563649  # at://did:plc:6kf6jxl44h34mprhykvqljcx/app.bsky.feed.post/3mdkthnkipb2e  # 67/13/2/0, 2026-01-29
+2999745604  # at://did:plc:6gbm7hkapyhjt2jghosdzwv2/app.bsky.feed.post/3ltzxskkxy22i  # 215/56/9/7, 2025-07-15
+189949590  # at://did:plc:6gbm7hkapyhjt2jghosdzwv2/app.bsky.feed.post/3mxm5qksna22t  # 68/12/0/2, 2026-10-11
+3704412311  # at://did:plc:gk6iy3ilby43riczukhq6mq2/app.bsky.feed.post/3mvag22lf5p2g  # 7/1/0/0, 2026-09-11
+962856706  # at://did:plc:m2jwplpernhxkzbo4ev5ljwj/app.bsky.feed.post/3lnxp4gb3ek2s  # 14/0/0/1, 2025-04-29
+1375221911  # at://did:plc:rb4pubqfeokufmgkpjo2vbll/app.bsky.feed.post/3llk63n6ox22c  # 18/5/1/0, 2025-03-29
+2211599927  # at://did:plc:rb4pubqfeokufmgkpjo2vbll/app.bsky.feed.post/3ltz7awvz5c2i  # 6/0/0/0, 2025-07-15
+2704738141  # at://did:plc:kft6lu4trxowqmter2b6vg6z/app.bsky.feed.post/3mpuf4qk5m22j  # 160/11/2/15, 2026-07-05
+2133408  # at://did:plc:uumv6zar7qzfib5gzenz7ncm/app.bsky.feed.post/3mummxasxok2v  # 218/44/5/2, 2026-09-03
+426524556  # at://did:plc:uumv6zar7qzfib5gzenz7ncm/app.bsky.feed.post/3mvpg63suis27  # 42/8/0/0, 2026-09-17
+3526055176  # at://did:plc:5eh75lr7s6yspmxrmbzqki3n/app.bsky.feed.post/3mkkgxmxcuk2s  # 146/26/2/1, 2026-04-28
+4179898005  # at://did:plc:svcebrizuuy6vy6tsqmc3icz/app.bsky.feed.post/3mq5jpik2hs2u  # 618/157/31/15, 2026-07-08
+1182361482  # at://did:plc:svcebrizuuy6vy6tsqmc3icz/app.bsky.feed.post/3li3qjjs3dc22  # 87/16/4/1, 2025-02-13
+3596716133  # at://did:plc:jh3gxnjkdilqztis6mqlvkp7/app.bsky.feed.post/3mmcsugyia22t  # 28/5/0/0, 2026-05-20
+3127139635  # at://did:plc:rnqol7ddqwydvhnxhe6xhlml/app.bsky.feed.post/3mg6xh2l4zc2q  # 157/34/4/5, 2026-03-03
+2952327928  # at://did:plc:igwrpgflzixw5ucvit27yo2k/app.bsky.feed.post/3lnky3q2y3s26  # 41/6/1/0, 2025-04-24
+2093712811  # at://did:plc:a2rdzfdxkjwerrfrpbwcipb2/app.bsky.feed.post/3lxuspst24l2l  # 4/2/0/0, 2025-09-02
+4025491452  # at://did:plc:3psqc2say4eatwzq3yl5etfd/app.bsky.feed.post/3lmhhjrolck2z  # 4/1/0/0, 2025-04-10
+1045958193  # at://did:plc:w2wcqqbevx536r4vau7f2pae/app.bsky.feed.post/3mlsns25muo2x  # 57/7/2/3, 2026-05-14
+3072875286  # at://did:plc:w2wcqqbevx536r4vau7f2pae/app.bsky.feed.post/3mkpoalletq2x  # 8/0/0/0, 2026-04-30
+3926927592  # at://did:plc:z4lutgunglpmgcbawqnckkfm/app.bsky.feed.post/3lzqyxro56s2f  # 8/0/2/1, 2025-09-26
