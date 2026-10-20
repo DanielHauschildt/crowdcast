@@ -1,0 +1,33 @@
+# Holdout set: never tune on these; report them. Same format as threads.txt; ids land here by isHoldout(id) (src/scorecard.ts).
+
+# Corpus < 30 points, ≥ 5 comments (Show HN 2023–2026, Algolia, 2026-10-20)
+34872909  # DIYnDNS – I Don't Want to Pay for a Static IP Address, 6 points, 6 comments
+39407966  # Book rewrite (reduction of 40-60%) service with LLMs, 5 points, 9 comments
+40515357  # Free tool to record video feedback from your phone, tablet or computer, 13 points, 5 comments
+41306157  # I wrote a script that finds abandoned websites to buy- FolioFindr.com, 2 points, 5 comments
+43756706  # Add 'unlock' to booking URL to auto-compare the same hotel across sites, 1 points, 5 comments
+44112974  # Circle Crop Image, 10 points, 10 comments
+47960525  # Throwaway – open-source disposable email checker and API, 14 points, 14 comments
+49368915  # Klo – Native Mac video editor you talk to (40 releases in 30 days), 2 points, 5 comments
+49426877  # Flostep – Diagrams people can actually walk through, 27 points, 17 comments
+
+# Corpus 30–150 points, ≥ 5 comments (Show HN 2023–2026, Algolia, 2026-10-20)
+37274882  # Going into freshman year, figured I should build an interpreter, 138 points, 79 comments
+38705535  # I built an open source AI video search engine to learn more about AI, 145 points, 49 comments
+40633766  # Collaborative ASCII Drawing with Telnet, 101 points, 18 comments
+40961385  # I generated 70k audiobooks with OpenAI Text-to-Speech, 140 points, 109 comments
+41243703  # I made a tool to help collect and validate startup ideas, 38 points, 51 comments
+44309891  # Trieve CLI – Terminal-based LLM agent loop with search tool for PDFs, 35 points, 8 comments
+44582730  # ggc – A terminal-based Git CLI written in Go, 65 points, 61 comments
+45420539  # WebRTC LAN Baby Monitor for iOS and iPadOS, 53 points, 12 comments
+46749213  # C From Scratch – Learn safety-critical C with prove-first methodology, 72 points, 12 comments
+47392158  # Free OpenAI API Access with ChatGPT Account, 48 points, 17 comments
+47730522  # Waffle – Native macOS terminal that auto-tiles sessions into a grid, 40 points, 23 comments
+49800513  # Npunlock – Run custom C kernels for Intel NPUs, 67 points, 16 comments
+
+# Corpus > 150 points, ≥ 5 comments (Show HN 2023–2026, Algolia, 2026-10-20)
+37448914  # I built a Python web framework, 173 points, 113 comments
+41748519  # I built a Iridium/LTE satellite GPS tracker and took it to the Arctic, 211 points, 55 comments
+41837204  # X11 tool to share a screen area in any video meeting, 346 points, 154 comments
+42737778  # Interactive game teaching dark patterns in UX design, 179 points, 64 comments
+46721802  # isometric.nyc – giant isometric pixel art map of NYC, 1325 points, 241 comments
