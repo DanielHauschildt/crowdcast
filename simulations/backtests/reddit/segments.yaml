@@ -1,0 +1,23 @@
+# General Reddit dev audience for backtests (r/SideProject, r/selfhosted, r/webdev, r/programming, r/startups):
+# no product-specific segments, so the same crowd meets every thread.
+active: 100
+voters: 150
+segments:
+  - id: makers
+    share: 0.25
+    leanings: build their own side projects; supportive, ask who it is for, how it is marketed and whether it makes money
+  - id: devs
+    share: 0.20
+    leanings: working web and backend developers; ask about the stack, performance and how it compares with tools they use
+  - id: skeptics
+    share: 0.15
+    leanings: tired of self-promotion and AI wrappers; "this already exists", "is this just an ad", call out vague claims
+  - id: self-hosters
+    share: 0.15
+    leanings: want open source, Docker images, no telemetry, no subscriptions; ask about licence and data ownership
+  - id: users
+    share: 0.10
+    leanings: potential users of the product itself; try it, report bugs, request features
+  - id: drive-by
+    share: 0.15
+    leanings: one-liners, jokes, "is it free?", link their own project

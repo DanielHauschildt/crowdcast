@@ -66,15 +66,14 @@ async function linkedText(fetchFn: FetchFn, url: string): Promise<string> {
   return page ? stripHtml(page) : '';
 }
 
-/** The page a launch post is about: the link of a link post, else the first non-Reddit link in the text. */
+const REDDIT_HOSTED = /^https?:\/\/([^/]*\.)?(reddit\.com|redd\.it)\//;
+
+/** A link post's link or a self post's first link, skipping Reddit's own pages and media. */
 function productUrl(p: Post): string {
-  if (!p.is_self) return p.url;
-  const links = p.selftext.match(/https?:\/\/[^\s)\]]+/g) ?? [];
-  return (
-    links.find(
-      (u) => !/^https?:\/\/([^/]*\.)?(reddit\.com|redd\.it)\//.test(u)
-    ) ?? ''
-  );
+  const links = p.is_self
+    ? (p.selftext.match(/https?:\/\/[^\s)\]]+/g) ?? [])
+    : [p.url];
+  return links.find((u) => !REDDIT_HOSTED.test(u)) ?? '';
 }
 
 function flatten(things: Thing[], out: RealComment[]): void {
@@ -122,17 +121,13 @@ export async function fetchReference(
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
   const link = productUrl(p);
   const linked = link ? await linkedText(fetchFn, link) : '';
+  const firstComment = body ? null : (opTop?.text ?? null);
   return {
     id,
-    post: {
-      title: p.title,
-      url: p.is_self ? '' : p.url,
-      body,
-      firstComment: body ? null : (opTop?.text ?? null)
-    },
+    post: { title: p.title, url: p.is_self ? '' : p.url, body, firstComment },
     comments,
     points: p.score,
     op: p.author,
-    context: (linked || body).slice(0, MAX_CONTEXT_CHARS)
+    context: (linked || body || firstComment || '').slice(0, MAX_CONTEXT_CHARS)
   };
 }

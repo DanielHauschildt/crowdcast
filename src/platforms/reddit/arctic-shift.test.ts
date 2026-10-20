@@ -144,6 +144,22 @@ describe('fetchReference (Arctic Shift)', () => {
     expect(self.context).toBe(self.post.body);
   });
 
+  it('never fetches Reddit-hosted media and falls back to the OP comment for context', async () => {
+    const { fn, urls } = fakeFetch(
+      post({
+        is_self: false,
+        url: 'https://v.redd.it/xyz',
+        selftext: '',
+        author: 'alice'
+      })
+    );
+    const t = await fetchReference(NUM, fn);
+    expect(urls.some((u) => u.includes('redd.it'))).toBe(false);
+    expect(t.post.url).toBe('https://v.redd.it/xyz');
+    expect(t.post.firstComment).toBe('Is it open source?');
+    expect(t.context).toBe('Is it open source?');
+  });
+
   it('fails clearly when the post is unknown', async () => {
     await expect(
       fetchReference(NUM, fakeFetch({ data: [] }).fn)

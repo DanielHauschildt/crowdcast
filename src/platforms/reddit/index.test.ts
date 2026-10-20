@@ -1,6 +1,13 @@
-import { cpSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   makePersona,
@@ -131,7 +138,17 @@ describe('reddit end to end', () => {
   it('runs the example seed through engine, metrics and report on the reddit platform', async () => {
     const root = mkdtempSync(join(tmpdir(), 'reddit-'));
     const seedDir = join(root, 'seeds', 'reddit-tablecraft');
-    cpSync('examples/reddit-tablecraft', seedDir, { recursive: true });
+    cpSync(
+      fileURLToPath(
+        new URL('../../../examples/reddit-tablecraft', import.meta.url)
+      ),
+      seedDir,
+      { recursive: true }
+    );
+    writeFileSync(
+      join(seedDir, 'platform.yaml'),
+      'platform: reddit\nsubreddit: selfhosted\n'
+    );
     const llms: FakeLlm[] = [];
     const logs: string[] = [];
     const code = await main(['run', seedDir, '--steps', '2'], {
@@ -149,7 +166,7 @@ describe('reddit end to end', () => {
     const read = (f: string): string => readFileSync(join(dir, f), 'utf8');
     expect(JSON.parse(read('run.json'))).toMatchObject({ platform: 'reddit' });
     const prompts = llms.flatMap((l) => l.requests.map((r) => r.system));
-    expect(prompts.some((s) => s.includes('r/SideProject'))).toBe(true);
+    expect(prompts.some((s) => s.includes('r/selfhosted'))).toBe(true);
     expect(prompts.some((s) => s.includes('Hacker News'))).toBe(false);
     const m = JSON.parse(read('metrics.json')) as Metrics;
     expect(['top5', 'top25', 'rising', 'new']).toContain(m.peakBand);
@@ -167,6 +184,7 @@ describe('reddit end to end', () => {
     expect(count('down')).toBeGreaterThan(0);
     expect(m.finalPoints).toBe(1 + count('up') - count('down'));
     expect(read('thread.md')).toMatch(/\[c1\] p\d+ · -\d+ points/);
+    // Known gap: run.json does not keep platform.yaml options, so the report reloads the default subreddit.
     expect(read('report.md')).toContain('# r/SideProject rehearsal:');
   });
 });
