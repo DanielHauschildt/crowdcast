@@ -4,7 +4,7 @@ import type { FetchFn, Platform, RealThread } from '../../platform.js';
 import { liveComments, type ThreadState } from '../../thread.js';
 import { FOUNDER } from '../../types.js';
 import { fetchBskyPost } from './bsky-api.js';
-import { DATA_DIR, parseRefList, readFit } from './fit.js';
+import { DATA_DIR, fitList, parseRefList, readFit } from './fit.js';
 import {
   AGENT_RULES,
   agentSystem,
@@ -112,6 +112,7 @@ export function makeBluesky(o: BlueskyOptions): Platform {
     themesSystem: THEMES_SYSTEM,
     recallSystem: RECALL_SYSTEM,
     fetchReference,
+    fit: (file, _author, fetchFn) => fitList(file, fetchFn),
     withOptions: (options) => {
       const next = { ...o };
       for (const [key, value] of Object.entries(options)) {

@@ -79,6 +79,31 @@ describe('linkedin platform', () => {
     );
   });
 
+  it('takes the network from author.connections and the audience into the prompts', async () => {
+    const author = {
+      followers: 500,
+      connections: 3000,
+      audience: 'data leads at mid-sized companies'
+    };
+    const p = await loadPlatform('linkedin', {}, author);
+    expect(
+      p.visibility(emptyThread(makePost()), 0, author).visitorFraction
+    ).toBeCloseTo(
+      (3000 * DEFAULT_REACH.testSlice) /
+        DEFAULT_REACH.testSteps /
+        DEFAULT_REACH.audiencePool
+    );
+    for (const prompt of [
+      p.personaSystem,
+      p.voterPersonaSystem,
+      p.founderSystem(2)
+    ])
+      expect(prompt).toContain('data leads at mid-sized companies');
+    expect((await loadPlatform('linkedin')).personaSystem).not.toContain(
+      'mostly'
+    );
+  });
+
   it('applies platform.yaml options: headline, connections and reach constants', async () => {
     const p = await loadPlatform('linkedin', {
       headline: 'Founder at Tablecraft',

@@ -31,4 +31,4 @@ that come out unordered are flagged; don't apply them.
 ## Privacy
 
 Only story ids, counts, ranks and timestamps are stored: no usernames, titles, links or comment text. `data/` is
-gitignored; `fit.md`/`fit.json` hold aggregates only.
+gitignored; `fit.md`/`fit.json` hold aggregates only and are gitignored too (commit them with a calibration round).

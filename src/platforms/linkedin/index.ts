@@ -1,4 +1,6 @@
-import type { Platform } from '../../platform.js';
+import { readFileSync } from 'node:fs';
+import type { Author, Platform } from '../../platform.js';
+import { fit, parseAnalyticsCsv } from './analytics.js';
 import { AGENT_RULES, linkedinPrompts } from './prompts.js';
 import {
   BAND_ORDER,
@@ -15,8 +17,10 @@ export const LINKEDIN_DISCLAIMER =
 
 export interface LinkedinOptions {
   headline: string;
-  /** First-degree connections; the network is the larger of this and `author.followers`. */
+  /** Deprecated alias of `author.connections`. */
   connections: number;
+  /** platform.yaml's author, for the prompts. */
+  author?: Author;
   reach: ReachConstants;
 }
 
@@ -37,8 +41,10 @@ const REACH_KEYS = [
 ] as const;
 
 export function makeLinkedin(o: LinkedinOptions): Platform {
-  const network = (followers?: number): number =>
-    Math.max(followers ?? 0, o.connections) || DEFAULT_NETWORK;
+  // LinkedIn followers already include connections, so the network is the larger of the two.
+  const network = (author?: Author): number =>
+    Math.max(author?.followers ?? 0, author?.connections ?? o.connections) ||
+    DEFAULT_NETWORK;
   return {
     id: 'linkedin',
     stepMinutes: STEP_MINUTES,
@@ -59,7 +65,7 @@ export function makeLinkedin(o: LinkedinOptions): Platform {
     visibility: (state, step, author) => {
       const { band, visitorFraction } = reachAt(
         o.reach,
-        network(author?.followers),
+        network(author),
         state,
         step
       );
@@ -68,15 +74,31 @@ export function makeLinkedin(o: LinkedinOptions): Platform {
     rankScore: (state, ageHours, author) =>
       reachAt(
         o.reach,
-        network(author?.followers),
+        network(author),
         state,
         Math.floor((ageHours * 60) / STEP_MINUTES)
       ).impressions,
-    ...linkedinPrompts(o.headline),
+    ...linkedinPrompts(o.headline, o.author?.audience),
     agentRules: AGENT_RULES,
     disclaimer: LINKEDIN_DISCLAIMER,
-    withOptions: (options) => {
-      const next: LinkedinOptions = { ...o, reach: { ...o.reach } };
+    fit: async (file, author) => {
+      const r = fit(
+        parseAnalyticsCsv(readFileSync(file, 'utf8')),
+        network(author),
+        o.reach
+      );
+      return [
+        `testSlice: ${r.testSlice.toPrecision(3)}`,
+        `expansion: ${r.expansion.toPrecision(3)}`,
+        `# log error ${r.before.toFixed(3)} → ${r.after.toFixed(3)}, network ${network(author)}; put both in platform.yaml`
+      ].join('\n');
+    },
+    withOptions: (options, author) => {
+      const next: LinkedinOptions = {
+        ...o,
+        reach: { ...o.reach },
+        ...(author ? { author } : {})
+      };
       const fail = (msg: string): never => {
         throw new Error(`platform.yaml: ${msg}`);
       };

@@ -6,7 +6,7 @@
 - `threads/<id>/`: cached `real.json`, `context.md` and `timeline.json` (followers, like times, reposter
   followers). Gitignored: it holds real handles and text.
 - `fit.json`: reach constants fitted on the train list's likes in the first 4 hours (16 × 15-min steps);
-  `src/platforms/bluesky/index.ts` reads them as defaults. Refit with `pnpm build && node dist/platforms/bluesky/fit.js`.
+  `src/platforms/bluesky/index.ts` reads them as defaults. Refit with `pnpm crowdcast fit bluesky simulations/backtests/bluesky/threads.txt`.
 - `segments.yaml`: the backtest crowd (100 active + 150 voters = the platform's default `audiencePool`).
 
 Run a backtest: `pnpm crowdcast backtest --platform bluesky --limit 2 --steps 2`.

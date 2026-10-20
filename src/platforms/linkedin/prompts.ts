@@ -31,9 +31,13 @@ export interface LinkedinPrompts {
   recallSystem: string;
 }
 
-/** `headline` is the author's LinkedIn headline, e.g. "Founder at Tablecraft". */
-export function linkedinPrompts(headline: string): LinkedinPrompts {
+/** `headline` is the author's LinkedIn headline, e.g. "Founder at Tablecraft"; `audience` who their network is. */
+export function linkedinPrompts(
+  headline: string,
+  audience?: string
+): LinkedinPrompts {
   const author = `a post by ${headline}`;
+  const network = audience ? ` Their network is mostly ${audience}.` : '';
   return {
     agentSystem: (p) =>
       [
@@ -66,13 +70,13 @@ export function linkedinPrompts(headline: string): LinkedinPrompts {
       'under a comment marked "↳ answered by OP". Prefer unanswered top-level comments with ' +
       'the most likes. Where a prepared answer is marked TODO(team), say plainly that it is ' +
       "not decided yet and state what is known; never reply only to say you can't confirm " +
-      `something. At most ${maxReplies} replies.`,
+      `something. At most ${maxReplies} replies.${network}`,
     personaSystem:
       `You create realistic LinkedIn member personas: people in the network of ${headline} or ` +
       'one hop beyond it, for a social simulation. Personas must be specific and believable, not ' +
       'caricatures. Vary seniority, company size, industry, location and writing style. Spread ' +
       'aiAttitude across the plausible range for the segment; never make everyone hostile or ' +
-      'everyone enthusiastic.',
+      `everyone enthusiastic.${network}`,
     personaPrompt: (seg, count) =>
       `Segment: ${seg.id}\nTypical leanings: ${seg.leanings}\n\n` +
       `They see posts by ${headline} in their LinkedIn feed. Create exactly ${count} personas from this segment.\n` +
@@ -84,7 +88,7 @@ export function linkedinPrompts(headline: string): LinkedinPrompts {
       'on any work topic.',
     voterPersonaSystem:
       `You create one-line profiles of LinkedIn members who see posts by ${headline} and mostly ` +
-      'scroll and react. Make them diverse and concrete (role, company type, what they care about).',
+      `scroll and react. Make them diverse and concrete (role, company type, what they care about).${network}`,
     labelSystem: `You classify LinkedIn comments on ${author} about a product launch. Pick the single best label per comment.`,
     reportSystem:
       'You analyse a simulated LinkedIn post and its comments for the team launching the ' +

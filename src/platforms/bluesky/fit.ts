@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import type { FetchFn } from '../../platform.js';
 import { fetchBskyPost, threadId, type Timeline } from './bsky-api.js';
 import {
   decay,
@@ -131,24 +132,27 @@ export function fitReach(
   };
 }
 
-/** Fetches (or reads cached) timelines of the train list, fits, and writes fit.json. */
-export async function main(): Promise<void> {
-  const refs = parseRefList(
-    readFileSync(join(DATA_DIR, 'threads.txt'), 'utf8')
-  );
+/** Fetches (or reads cached) timelines of a thread list, fits, and writes fit.json beside the list. */
+export async function fitList(
+  listFile: string,
+  fetchFn?: FetchFn
+): Promise<string> {
+  const root = dirname(listFile);
+  const refs = parseRefList(readFileSync(listFile, 'utf8'));
+  const skipped: string[] = [];
   const timelines: Timeline[] = [];
   for (const ref of refs) {
-    const dir = join(DATA_DIR, 'threads', String(ref.id));
+    const dir = join(root, 'threads', String(ref.id));
     const file = join(dir, 'timeline.json');
     if (!existsSync(file)) {
       try {
-        const { thread, timeline } = await fetchBskyPost(ref.uri);
+        const { thread, timeline } = await fetchBskyPost(ref.uri, fetchFn);
         mkdirSync(dir, { recursive: true });
         writeFileSync(join(dir, 'real.json'), JSON.stringify(thread, null, 2));
         writeFileSync(join(dir, 'context.md'), thread.context);
         writeFileSync(file, JSON.stringify(timeline, null, 2));
       } catch (err) {
-        console.log(`${ref.id}: skipped — ${(err as Error).message}`);
+        skipped.push(`${ref.id}: skipped — ${(err as Error).message}`);
         continue;
       }
     }
@@ -156,15 +160,14 @@ export async function main(): Promise<void> {
   }
   const { constants, n } = fitReach(timelines);
   writeFileSync(
-    FIT_FILE,
+    join(root, 'fit.json'),
     JSON.stringify(
       { fittedAt: new Date().toISOString().slice(0, 10), n, constants },
       null,
       2
     ) + '\n'
   );
-  console.log(`fit on ${n} posts: ${JSON.stringify(constants)}`);
+  return [...skipped, `fit on ${n} posts: ${JSON.stringify(constants)}`].join(
+    '\n'
+  );
 }
-
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
-  await main();

@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { backtest, BACKTEST_USAGE } from './commands/backtest.js';
 import { compareJobs, mapPool } from './commands/compare.js';
+import { fit, FIT_USAGE } from './commands/fit.js';
 import { parseThreadIds, personasFromHn } from './commands/personas-from-hn.js';
 import { track, TRACK_USAGE } from './commands/track.js';
 import { compareMarkdown, summarizeRun } from './compare.js';
@@ -51,7 +52,8 @@ const USAGE = `usage:
   crowdcast interview <runDir> <personaId|handle|segment> "<question>"
   crowdcast personas-from-hn <seedDir> --threads <ids|file> [--max 80]
 ${BACKTEST_USAGE}
-${TRACK_USAGE}`;
+${TRACK_USAGE}
+${FIT_USAGE}`;
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
@@ -189,6 +191,7 @@ export async function main(
   const deps = { ...defaults, ...partial };
   if (argv[0] === 'backtest') return backtest(argv.slice(1), deps);
   if (argv[0] === 'track') return track(argv.slice(1), deps);
+  if (argv[0] === 'fit') return fit(argv.slice(1), deps);
   let parsed;
   try {
     parsed = parseArgs({

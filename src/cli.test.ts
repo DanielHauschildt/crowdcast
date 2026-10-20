@@ -267,4 +267,12 @@ describe('cli', () => {
     expect(readFileSync(join(dir, 'fit.md'), 'utf8')).toMatch(/1 stories/);
     expect(await main(['track', 'nope'], deps([]))).toBe(1);
   });
+
+  it('fit dispatches to the platform and lists itself in the usage', async () => {
+    const logs: string[] = [];
+    expect(await main(['fit', 'hn', 'x.csv'], deps(logs))).toBe(1);
+    expect(logs.join('\n')).toMatch(/platform hn has no fit/);
+    expect(await main(['nope'], deps(logs))).toBe(2);
+    expect(logs.join('\n')).toContain('crowdcast fit <platform> <file>');
+  });
 });
