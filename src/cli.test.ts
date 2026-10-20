@@ -255,4 +255,16 @@ describe('cli', () => {
     expect(await main(['nope'], deps(logs))).toBe(2);
     expect(logs.join('\n')).toMatch(/usage/i);
   });
+
+  it('track fit writes fit.md from <dir>/data', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'track-'));
+    mkdirSync(join(dir, 'data'));
+    writeFileSync(
+      join(dir, 'data', '1.jsonl'),
+      '{"t":"","ageMin":5,"points":2,"comments":0,"rankTop":null}\n'
+    );
+    expect(await main(['track', 'fit', '--dir', dir], deps([]))).toBe(0);
+    expect(readFileSync(join(dir, 'fit.md'), 'utf8')).toMatch(/1 stories/);
+    expect(await main(['track', 'nope'], deps([]))).toBe(1);
+  });
 });

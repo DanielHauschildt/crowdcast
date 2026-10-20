@@ -28,15 +28,19 @@ describe('track', () => {
     const dir = mkdtempSync(join(tmpdir(), 'track-'));
     let t = NOW;
     const sleeps: number[] = [];
-    await track(['--hours', '0.25', '--interval-min', '5', '--dir', dir], {
-      fetchFn,
-      log: () => {},
-      now: () => t,
-      sleep: async (ms) => {
-        sleeps.push(ms);
-        t += ms;
+    const code = await track(
+      ['--hours', '0.25', '--interval-min', '5', '--dir', dir],
+      {
+        fetchFn,
+        log: () => {},
+        now: () => new Date(t),
+        sleep: async (ms) => {
+          sleeps.push(ms);
+          t += ms;
+        }
       }
-    });
+    );
+    expect(code).toBe(0);
     expect(sleeps).toEqual([300e3, 300e3]);
     expect(
       readFileSync(join(dir, 'data', '7.jsonl'), 'utf8')
@@ -45,10 +49,12 @@ describe('track', () => {
     ).toHaveLength(3);
   });
 
-  it('rejects a non-positive interval', async () => {
-    await expect(
-      track(['--interval-min', '0'], { fetchFn, log: () => {} })
-    ).rejects.toThrow(/interval/);
+  it('rejects a non-positive interval and unknown flags', async () => {
+    const logs: string[] = [];
+    const log = (m: string) => void logs.push(m);
+    expect(await track(['--interval-min', '0'], { fetchFn, log })).toBe(1);
+    expect(logs.join('\n')).toMatch(/interval-min/);
+    expect(await track(['--nope'], { fetchFn, log })).toBe(2);
   });
 
   it('`fit` writes fit.md and fit.json from the collected timelines', async () => {
@@ -61,7 +67,9 @@ describe('track', () => {
       [line(10, 2, null), line(40, 30, 5), ''].join('\n')
     );
     const logs: string[] = [];
-    await track(['fit', '--dir', dir], { fetchFn, log: (m) => logs.push(m) });
+    expect(
+      await track(['fit', '--dir', dir], { fetchFn, log: (m) => logs.push(m) })
+    ).toBe(0);
     expect(readFileSync(join(dir, 'fit.md'), 'utf8')).toMatch(/1 stories/);
     const json = JSON.parse(readFileSync(join(dir, 'fit.json'), 'utf8'));
     expect(json.snapshots).toBe(2);

@@ -17,7 +17,7 @@ const OPTIONS = {
 export interface TrackDeps {
   fetchFn?: FetchFn;
   log: (msg: string) => void;
-  now?: () => number;
+  now?: () => Date;
   sleep?: (ms: number) => Promise<void>;
 }
 
@@ -48,12 +48,36 @@ export function loadTimelines(dataDir: string): Timeline[] {
     }));
 }
 
-export async function track(argv: string[], deps: TrackDeps): Promise<void> {
-  const { values, positionals } = parseArgs({
-    args: argv,
-    options: OPTIONS,
-    allowPositionals: true
-  });
+export async function track(argv: string[], deps: TrackDeps): Promise<number> {
+  let parsed;
+  try {
+    parsed = parseArgs({
+      args: argv,
+      options: OPTIONS,
+      allowPositionals: true
+    });
+  } catch (err) {
+    deps.log(`${(err as Error).message}\nusage:\n${TRACK_USAGE}`);
+    return 2;
+  }
+  try {
+    await runTrack(parsed.values, parsed.positionals, deps);
+    return 0;
+  } catch (err) {
+    deps.log(`error: ${(err as Error).message}`);
+    return 1;
+  }
+}
+
+type Values = ReturnType<
+  typeof parseArgs<{ options: typeof OPTIONS; allowPositionals: true }>
+>['values'];
+
+async function runTrack(
+  values: Values,
+  positionals: string[],
+  deps: TrackDeps
+): Promise<void> {
   const dataDir = join(values.dir, 'data');
   if (positionals[0] === 'fit') {
     const fit = fitSchedule(loadTimelines(dataDir));
@@ -74,7 +98,7 @@ export async function track(argv: string[], deps: TrackDeps): Promise<void> {
     fetchFn: deps.fetchFn ?? fetch,
     dataDir,
     concurrency: 4,
-    now: deps.now ?? Date.now,
+    now: () => (deps.now?.() ?? new Date()).getTime(),
     sleep: deps.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms))),
     log: deps.log,
     hours,
