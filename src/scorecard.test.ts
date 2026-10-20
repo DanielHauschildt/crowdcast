@@ -24,6 +24,8 @@ const score = (
   title: `Show HN: T${id}`,
   runDir: `/runs/${id}`,
   aborted: null,
+  truncatedAtStep: null,
+  skipped: null,
   hours: 2,
   realPoints,
   simPoints,
@@ -177,6 +179,25 @@ describe('aggregate', () => {
     expect(a.spearman).toBe(1);
   });
 
+  it('keeps truncated threads in every number, leaves skipped ones out, and lists both', () => {
+    const a = aggregate([
+      score(1, 10, 2),
+      score(2, 100, 4, { truncatedAtStep: 3, tv: 0.1 }),
+      score(3, 50, 3),
+      score(4, 0, 0, {
+        skipped: 'skipped: 0 real replies',
+        tv: null,
+        recall: null,
+        commentRatio: null
+      })
+    ]);
+    expect(a.completed).toBe(3);
+    expect(a.truncated).toEqual([2]);
+    expect(a.skipped).toEqual([4]);
+    expect(a.tv).toBeCloseTo(0.3);
+    expect(a.spearman).toBe(1);
+  });
+
   it('adds 90% intervals for recall and TV, and a geometric mean comment ratio', () => {
     const scores = [1, 2, 3, 4, 5, 6].map((i) =>
       score(i, i * 10, i, {
@@ -257,6 +278,35 @@ describe('scorecardMarkdown', () => {
   });
 });
 
+describe('scorecardMarkdown with truncated and skipped threads', () => {
+  it('marks truncated rows with † and their age, shows skip reasons and counts both', () => {
+    const scores = [
+      score(1, 10, 2),
+      score(2, 100, 4, { truncatedAtStep: 3, hours: 1 }),
+      score(3, 5, 0, {
+        skipped: 'skipped: 0 real replies',
+        themes: [],
+        tv: null,
+        recall: null,
+        commentRatio: null
+      })
+    ];
+    const md = scorecardMarkdown(scores, aggregate(scores), {
+      stamp: 'x',
+      steps: 6,
+      seed: 1,
+      set: 'train'
+    });
+    expect(md).toContain('| 2† | Show HN: T2 |');
+    expect(md).toContain('truncated at step 3 (1h)');
+    expect(md).toContain('| skipped: 0 real replies |');
+    expect(md).toContain('| 2/3 (1†, 1 skipped) |');
+    expect(md).toMatch(/† .*real values are final/);
+    expect(md).not.toContain('NaN');
+    expect(md).not.toContain('### 3 ');
+  });
+});
+
 describe('historyRow', () => {
   it('matches the header column count and records the set and n', () => {
     const scores = [score(1, 10, 2), score(2, 20, 3, { aborted: 'budget' })];
@@ -272,5 +322,24 @@ describe('historyRow', () => {
     expect(cols(row)).toBe(cols(HISTORY_HEADER.split('\n')[0]!));
     expect(row).toContain('baseline');
     expect(row).toMatch(/\| holdout \| 2 \|$/);
+  });
+
+  it('counts truncated and skipped threads in the Completed cell without adding columns', () => {
+    const scores = [
+      score(1, 10, 2),
+      score(2, 20, 3, { truncatedAtStep: 2 }),
+      score(3, 0, 0, { skipped: 'skipped: 1 real reply', tv: null })
+    ];
+    const row = historyRow(aggregate(scores), {
+      stamp: 's',
+      steps: 6,
+      seed: 1,
+      set: 'train',
+      n: 3,
+      note: 'n'
+    });
+    const cols = (s: string) => s.split('|').length;
+    expect(cols(row)).toBe(cols(HISTORY_HEADER.split('\n')[0]!));
+    expect(row).toContain('| 2 (1†, 1 skipped) |');
   });
 });

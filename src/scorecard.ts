@@ -81,6 +81,9 @@ export function bootstrapInterval(
 export interface Aggregate {
   completed: number;
   aborted: number[];
+  /** Scored on a shortened run; included in every number. */
+  truncated: number[];
+  skipped: number[];
   recall: number | null;
   recallCi: Interval | null;
   tv: number | null;
@@ -112,14 +115,16 @@ const present = <T>(xs: ReadonlyArray<T | null>): T[] =>
   xs.filter((x): x is T => x !== null);
 
 export function aggregate(scores: readonly ThreadScore[], seed = 1): Aggregate {
-  const done = scores.filter((s) => !s.aborted);
+  const done = scores.filter((s) => !s.aborted && !s.skipped);
   const recalls = present(done.map((s) => s.recall));
-  const tvs = done.map((s) => s.tv);
+  const tvs = present(done.map((s) => s.tv));
   const ratios = present(done.map((s) => s.commentRatio));
   const avg = (xs: readonly number[]): number => mean(xs)!;
   return {
     completed: done.length,
     aborted: scores.filter((s) => s.aborted).map((s) => s.id),
+    truncated: done.filter((s) => s.truncatedAtStep !== null).map((s) => s.id),
+    skipped: scores.filter((s) => s.skipped).map((s) => s.id),
     recall: mean(recalls),
     recallCi: bootstrapInterval(recalls, avg, seed),
     tv: mean(tvs),
@@ -153,6 +158,24 @@ const fmtCi = (x: number | null, ci: Interval | null): string =>
   withCi(x, ci, fmt);
 const hoursOf = (steps: number): string =>
   `${Number(ageHours(steps).toFixed(1))}h`;
+const showHours = (h: number): string => `${Number(h.toFixed(1))}h`;
+
+/** `5 (2†, 1 skipped)`: completed threads, of which truncated, plus skipped ones. */
+function completedCell(agg: Aggregate): string {
+  const extra = [
+    agg.truncated.length > 0 ? `${agg.truncated.length}†` : '',
+    agg.skipped.length > 0 ? `${agg.skipped.length} skipped` : ''
+  ].filter(Boolean);
+  return extra.length === 0 ? '' : ` (${extra.join(', ')})`;
+}
+
+function status(s: ThreadScore): string {
+  if (s.skipped) return s.skipped;
+  if (s.aborted) return `aborted: ${s.aborted}`;
+  if (s.truncatedAtStep !== null)
+    return `truncated at step ${s.truncatedAtStep} (${showHours(s.hours)})`;
+  return 'ok';
+}
 
 export interface ScorecardMeta {
   stamp: string;
@@ -184,7 +207,7 @@ export function scorecardMarkdown(
     '',
     `| Completed | Theme recall | Objection-mix TV ↓ | Spearman ρ (points @ ${h} vs real) | Comment ratio (median) | Comment ratio (geo. mean) | Sentiment gap (mean, sim − real) |`,
     '|---|---|---|---|---|---|---|',
-    `| ${agg.completed}/${scores.length} | ${pctCi(agg.recall, agg.recallCi)} | ${fmtCi(agg.tv, agg.tvCi)} | ${fmt(agg.spearman)} | ${fmt(agg.commentRatio)} | ${fmtCi(agg.commentRatioMean, agg.commentRatioCi)} | ${fmt(agg.sentimentGap)} |`,
+    `| ${agg.completed}/${scores.length}${completedCell(agg)} | ${pctCi(agg.recall, agg.recallCi)} | ${fmtCi(agg.tv, agg.tvCi)} | ${fmt(agg.spearman)} | ${fmt(agg.commentRatio)} | ${fmtCi(agg.commentRatioMean, agg.commentRatioCi)} | ${fmt(agg.sentimentGap)} |`,
     '',
     '## Per thread',
     '',
@@ -192,13 +215,19 @@ export function scorecardMarkdown(
     '|---|---|---|---|---|---|---|---|---|---|---|',
     ...scores.map(
       (s) =>
-        `| ${s.id} | ${s.title.replace(/\|/g, '/')} | ${s.realPoints} | ${s.simPoints} | ${s.realComments} | ${s.simComments} | ${fmt(s.commentRatio)} | ${pct(s.recall)} | ${fmt(s.tv)} | ${fmt(s.realSentiment)} / ${fmt(s.simSentiment)} | ${s.aborted ? `aborted: ${s.aborted}` : 'ok'} |`
+        `| ${s.id}${s.truncatedAtStep === null ? '' : '†'} | ${s.title.replace(/\|/g, '/')} | ${s.realPoints} | ${s.simPoints} | ${s.realComments} | ${s.simComments} | ${fmt(s.commentRatio)} | ${pct(s.recall)} | ${fmt(s.tv)} | ${fmt(s.realSentiment)} / ${fmt(s.simSentiment)} | ${status(s)} |`
     ),
     '',
+    ...(agg.truncated.length > 0
+      ? [
+          '† Truncated: the simulation hit its share of `--max-calls`, so its points and comments are at the age in Status, while the real values are final (no real timeline at that age).',
+          ''
+        ]
+      : []),
     '## Themes of the real threads (✓ raised in the simulation)',
     ''
   ];
-  for (const s of scores) {
+  for (const s of scores.filter((s) => !s.skipped)) {
     lines.push(
       `### ${s.id} — ${s.title}`,
       '',
@@ -219,5 +248,5 @@ export function historyRow(
   agg: Aggregate,
   meta: ScorecardMeta & { n: number; note: string }
 ): string {
-  return `| ${meta.stamp} | ${meta.steps} | ${meta.seed} | ${agg.completed} | ${pctCi(agg.recall, agg.recallCi)} | ${fmtCi(agg.tv, agg.tvCi)} | ${fmt(agg.spearman)} | ${fmt(agg.commentRatio)} | ${fmt(agg.sentimentGap)} | ${meta.note.replace(/\|/g, '/')} | ${fmtCi(agg.commentRatioMean, agg.commentRatioCi)} | ${meta.set} | ${meta.n} |`;
+  return `| ${meta.stamp} | ${meta.steps} | ${meta.seed} | ${agg.completed}${completedCell(agg)} | ${pctCi(agg.recall, agg.recallCi)} | ${fmtCi(agg.tv, agg.tvCi)} | ${fmt(agg.spearman)} | ${fmt(agg.commentRatio)} | ${fmt(agg.sentimentGap)} | ${meta.note.replace(/\|/g, '/')} | ${fmtCi(agg.commentRatioMean, agg.commentRatioCi)} | ${meta.set} | ${meta.n} |`;
 }

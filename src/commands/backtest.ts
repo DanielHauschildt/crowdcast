@@ -30,7 +30,7 @@ import type { Seed } from '../types.js';
 
 export const BACKTEST_USAGE = `  crowdcast backtest [<id>…] [--platform hn] [--threads simulations/backtests[/<platform>]/threads.txt]
                      [--set train|holdout|all] [--sample N] [--limit N] [--steps 6] [--parallel 3] [--seed 1]
-                     [--concurrency 4] [--max-calls 400] [--note "…"]`;
+                     [--concurrency 4] [--max-calls 400] [--score-reserve 30] [--min-real-comments 3] [--note "…"]`;
 
 /** HN's lists predate platforms and stay at the top; other platforms get a folder each. */
 export const defaultThreadsFile = (platform: string): string =>
@@ -54,6 +54,9 @@ const OPTIONS = {
   seed: { type: 'string', default: '1' },
   concurrency: { type: 'string', default: '4' },
   'max-calls': { type: 'string', default: '400' },
+  // Scoring a 60-comment thread: 4 + 4 label batches, themes, recall = 10 calls, ×3 attempts.
+  'score-reserve': { type: 'string', default: '30' },
+  'min-real-comments': { type: 'string', default: '3' },
   note: { type: 'string', default: '' }
 } as const;
 
@@ -160,6 +163,18 @@ async function runBacktest(
   }
   const steps = Number(v.steps);
   const concurrency = Number(v.concurrency);
+  const maxCalls = Number(v['max-calls']);
+  const simCalls = maxCalls - Number(v['score-reserve']);
+  const minRealComments = Number(v['min-real-comments']);
+  if (
+    !(simCalls > 0) ||
+    !(Number.isInteger(minRealComments) && minRealComments >= 0)
+  ) {
+    deps.log(
+      `backtest: --score-reserve must leave the simulation some of --max-calls; --min-real-comments is a count\nusage:\n${BACKTEST_USAGE}`
+    );
+    return 2;
+  }
   const segs = parseSegments(readFileSync(join(root, 'segments.yaml'), 'utf8'));
   const audience: Seed = {
     name: 'backtest',
@@ -197,7 +212,7 @@ async function runBacktest(
       const s = await backtestThread({
         llm: deps.makeLlm({
           concurrency,
-          maxCalls: Number(v['max-calls']),
+          maxCalls,
           logFile: join(runDir, 'calls.jsonl')
         }),
         real,
@@ -208,12 +223,19 @@ async function runBacktest(
         steps,
         rngSeed,
         platform: withThreadOptions(platform, options),
-        options
+        options,
+        maxCalls: simCalls,
+        minRealComments
       });
       scores.set(id, s);
       deps.log(
-        `  ${id}: sim ${s.simPoints} pts / ${s.simComments} comments vs real ${s.realPoints} / ${s.realComments}` +
-          (s.aborted ? ` (aborted: ${s.aborted})` : '')
+        s.skipped
+          ? `  ${id}: ${s.skipped}`
+          : `  ${id}: sim ${s.simPoints} pts / ${s.simComments} comments vs real ${s.realPoints} / ${s.realComments}` +
+              (s.aborted ? ` (aborted: ${s.aborted})` : '') +
+              (s.truncatedAtStep === null
+                ? ''
+                : ` (truncated at step ${s.truncatedAtStep})`)
       );
     } catch (err) {
       deps.log(`  ${id}: failed — ${(err as Error).message}`);

@@ -48,6 +48,8 @@ export interface RunConfig {
   /** Default: the platform's. */
   steps?: number;
   maxErrorRate?: number;
+  /** Calls this run may spend; a step that would overrun it is not started and the run ends truncated. */
+  maxCalls?: number;
   onStep?: (e: StepEnd) => void;
 }
 
@@ -55,6 +57,8 @@ export interface RunResult {
   events: SimEvent[];
   state: ThreadState;
   aborted: string | null;
+  /** The first step not run because it would overrun `maxCalls`. */
+  truncatedAtStep: number | null;
 }
 
 const chunk = <T>(xs: readonly T[], n: number): T[][] =>
@@ -67,6 +71,8 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
   const author = cfg.author ?? cfg.seed.author;
   const steps = cfg.steps ?? platform.defaultSteps;
   const maxErrorRate = cfg.maxErrorRate ?? 0.1;
+  const maxCalls = cfg.maxCalls ?? Infinity;
+  const firstCall = cfg.llm.callCount;
   const file = join(cfg.runDir, EVENTS_FILE);
   mkdirSync(cfg.runDir, { recursive: true });
 
@@ -125,6 +131,10 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
         voters: cfg.personas.voters,
         state
       });
+      const planned =
+        plan.agents.length + Math.ceil(plan.voters.length / VOTER_BATCH) + 1;
+      if (cfg.llm.callCount - firstCall + planned > maxCalls)
+        return { events, state, aborted: null, truncatedAtStep: step };
 
       // 1. Agents — all see the same snapshot; visits are logged before any action.
       const view = renderThread(state, { maxChars: RENDER_CHARS });
@@ -251,7 +261,7 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
     } catch (err) {
       if (err instanceof LlmFatal || err instanceof BudgetExceeded) {
         flush([...batch, { kind: 'abort', step, reason: err.message }]);
-        return { events, state, aborted: err.message };
+        return { events, state, aborted: err.message, truncatedAtStep: null };
       }
       throw err;
     }
@@ -276,10 +286,10 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
     if (calls > 0 && failed / calls > maxErrorRate) {
       const reason = `error rate ${failed}/${calls} in step ${step} exceeds ${maxErrorRate}`;
       flush([{ kind: 'abort', step, reason }]);
-      return { events, state, aborted: reason };
+      return { events, state, aborted: reason, truncatedAtStep: null };
     }
   }
-  return { events, state, aborted: null };
+  return { events, state, aborted: null, truncatedAtStep: null };
 }
 
 /** Rough expected call counts, assuming the post hovers around the 30-on-front-page band. */

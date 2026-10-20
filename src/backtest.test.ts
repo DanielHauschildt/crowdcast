@@ -16,6 +16,8 @@ import {
 import type { FetchFn, RealThread } from './hn.js';
 import { LABELS, type CommentLabel } from './label.js';
 import { FakeLlm, type LlmRequest } from './llm.js';
+import hn from './platforms/hn/index.js';
+import { ageHours } from './schedule.js';
 import type { PersonaSet } from './types.js';
 
 const mixArb = fc
@@ -324,5 +326,92 @@ describe('backtestThread', () => {
       rngSeed: 1
     });
     expect(s.aborted).toMatch(/error rate/);
+  });
+
+  it('truncates a hot thread at its simulation budget, then still scores and marks it', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'bt-'));
+    const runDir = join(root, 'runs', 'hot');
+    const hot = {
+      ...hn,
+      visibility: () => ({ band: hn.bands[0]!, visitorFraction: 1 })
+    };
+    const llm = new FakeLlm(world);
+    const s = await backtestThread({
+      llm,
+      real,
+      threadDir: join(root, 'threads', '7'),
+      runDir,
+      seed: makeSeed({ name: 'hn-7' }),
+      personas,
+      steps: 3,
+      rngSeed: 1,
+      platform: hot,
+      maxCalls: 25
+    });
+    expect(s.aborted).toBeNull();
+    expect(s.truncatedAtStep).toBe(1);
+    expect(s.hours).toBe(ageHours(1, hn.stepMinutes));
+    expect(s.simComments).toBe(20);
+    expect(s.recall).toBeCloseTo(1 / 3);
+    const sim = llm.requests.filter((r) =>
+      /^(agent|voters|founder):/.test(r.label)
+    );
+    expect(sim.length).toBeLessThanOrEqual(25);
+    expect(llm.requests.map((r) => r.label)).toContain('theme-recall');
+    const meta = JSON.parse(readFileSync(join(runDir, 'run.json'), 'utf8')) as {
+      truncatedAtStep?: number;
+    };
+    expect(meta.truncatedAtStep).toBe(1);
+    const saved = JSON.parse(
+      readFileSync(join(runDir, 'score.json'), 'utf8')
+    ) as { truncatedAtStep: number };
+    expect(saved.truncatedAtStep).toBe(1);
+  });
+
+  it('skips a thread with too few real replies before spending any call', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'bt-'));
+    const runDir = join(root, 'runs', 'quiet');
+    const llm = new FakeLlm(world);
+    const s = await backtestThread({
+      llm,
+      real: {
+        ...real,
+        comments: real.comments.filter((c) => c.author === 'op')
+      },
+      threadDir: join(root, 'threads', '7'),
+      runDir,
+      seed: makeSeed({ name: 'hn-7' }),
+      personas,
+      steps: 2,
+      rngSeed: 1,
+      minRealComments: 3
+    });
+    expect(llm.callCount).toBe(0);
+    expect(s.skipped).toBe('skipped: 0 real replies');
+    expect(s.realComments).toBe(0);
+    expect(s.recall).toBeNull();
+    expect(existsSync(join(runDir, 'score.json'))).toBe(true);
+    expect(existsSync(join(runDir, 'events.jsonl'))).toBe(false);
+  });
+
+  it('scores recall as n/a when theme extraction fails instead of failing the thread', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'bt-'));
+    const llm = new FakeLlm((req) =>
+      req.label === 'themes' ? { themes: [] } : world(req)
+    );
+    const s = await backtestThread({
+      llm,
+      real,
+      threadDir: join(root, 'threads', '7'),
+      runDir: join(root, 'runs', 'nothemes'),
+      seed: makeSeed({ name: 'hn-7' }),
+      personas,
+      steps: 1,
+      rngSeed: 1
+    });
+    expect(s.themes).toEqual([]);
+    expect(s.recall).toBeNull();
+    expect(s.tv).toBe(1);
+    expect(llm.requests.map((r) => r.label)).not.toContain('theme-recall');
   });
 });

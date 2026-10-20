@@ -151,6 +151,30 @@ describe('runSimulation', () => {
     expect(res.aborted).toMatch(/max-calls/);
   });
 
+  it('ends truncated before a step that would overrun maxCalls, spending no call of it', async () => {
+    const run = (maxCalls?: number, llm = new FakeLlm(world())) =>
+      runSimulation({
+        post: makePost(),
+        seed: makeSeed(),
+        personas,
+        llm,
+        rngSeed: 1,
+        runDir: dir(),
+        maxCalls
+      });
+    const full = await run();
+    expect(full.truncatedAtStep).toBeNull();
+    const [c0, c1] = ends(full.events).map((e) => e.calls);
+    const llm = new FakeLlm(world());
+    const res = await run(c0! + c1! + 1, llm);
+    expect(res.aborted).toBeNull();
+    expect(res.truncatedAtStep).toBe(2);
+    expect(ends(res.events)).toHaveLength(2);
+    expect(res.events.some((e) => e.kind === 'abort')).toBe(false);
+    expect(llm.callCount).toBe(c0! + c1!);
+    expect(res.events).toEqual(full.events.slice(0, res.events.length));
+  });
+
   it('aborts when more than 10% of a step fails', async () => {
     const llm = new FakeLlm((req) =>
       req.label.startsWith('agent:') ? new Error('bad json') : world()(req)

@@ -42,16 +42,14 @@ const story = (id: number) => ({
   url: null,
   text: `Thing ${id} does stuff.`,
   points: id * 10,
-  children: [
-    {
-      id: id * 100,
-      author: 'bob',
-      created_at: '2025-01-01T00:05:00Z',
-      parent_id: id,
-      text: 'How much does it cost?',
-      children: []
-    }
-  ]
+  children: ['bob', 'carol', 'dave'].map((author, i) => ({
+    id: id * 100 + i,
+    author,
+    created_at: '2025-01-01T00:05:00Z',
+    parent_id: id,
+    text: 'How much does it cost?',
+    children: []
+  }))
 });
 
 const fetchFn: FetchFn = async (url) => {
@@ -156,6 +154,76 @@ describe('backtest command', () => {
       { ...deps([]) }
     );
     expect(code).toBe(0);
+  });
+});
+
+describe('backtest budget and skips', () => {
+  const card = (root: string) =>
+    readFileSync(join(root, '20261004-0905', 'scorecard.md'), 'utf8');
+
+  it('skips threads below --min-real-comments without spending a call on them', async () => {
+    const root = workspace();
+    const logs: string[] = [];
+    const llm = new FakeLlm(world);
+    const code = await backtest(
+      [
+        '2',
+        '--threads',
+        join(root, 'threads.txt'),
+        '--steps',
+        '1',
+        '--min-real-comments',
+        '4'
+      ],
+      { ...deps(logs), makeLlm: () => llm }
+    );
+    expect(code).toBe(0);
+    expect(
+      llm.requests.filter((r) => !/^(personas|voter-profiles)/.test(r.label))
+    ).toEqual([]);
+    expect(card(root)).toContain('skipped: 3 real replies');
+    expect(logs.join('\n')).toMatch(/2: skipped: 3 real replies/);
+  });
+
+  it('truncates the simulation at max-calls minus the scoring reserve and still scores', async () => {
+    const root = workspace();
+    const logs: string[] = [];
+    const code = await backtest(
+      [
+        '2',
+        '--threads',
+        join(root, 'threads.txt'),
+        '--steps',
+        '2',
+        '--max-calls',
+        '26',
+        '--score-reserve',
+        '25'
+      ],
+      deps(logs)
+    );
+    expect(code).toBe(0);
+    expect(card(root)).toContain('| 2† |');
+    expect(logs.join('\n')).toMatch(/2: sim .* \(truncated at step 0\)/);
+  });
+
+  it('rejects a scoring reserve that leaves the simulation no calls', async () => {
+    const root = workspace();
+    const logs: string[] = [];
+    expect(
+      await backtest(
+        [
+          '--threads',
+          join(root, 'threads.txt'),
+          '--max-calls',
+          '20',
+          '--score-reserve',
+          '20'
+        ],
+        deps(logs)
+      )
+    ).toBe(2);
+    expect(logs.join('\n')).toMatch(/--score-reserve/);
   });
 });
 

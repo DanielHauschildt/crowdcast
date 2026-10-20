@@ -160,6 +160,7 @@ const THEMES_SCHEMA = {
   }
 };
 
+/** [] when extraction fails (e.g. a thread too small to have themes): recall is then n/a. */
 async function extractThemes(
   llm: Llm,
   platform: Platform,
@@ -186,8 +187,7 @@ async function extractThemes(
       );
     }
   });
-  if (!res.ok) throw new Error(`theme extraction failed: ${res.error}`);
-  return res.value.themes.slice(0, 5);
+  return res.ok ? res.value.themes.slice(0, 5) : [];
 }
 
 const RECALL_SCHEMA = {
@@ -233,6 +233,10 @@ export interface ThreadScore {
   title: string;
   runDir: string;
   aborted: string | null;
+  /** Set when the simulation ran out of its call budget: it covers steps before this one. */
+  truncatedAtStep: number | null;
+  /** Why the thread was not simulated, e.g. `skipped: 0 real replies`. */
+  skipped: string | null;
   hours: number;
   realPoints: number;
   simPoints: number;
@@ -241,7 +245,7 @@ export interface ThreadScore {
   commentRatio: number | null;
   themes: Array<{ theme: string; raised: boolean }>;
   recall: number | null;
-  tv: number;
+  tv: number | null;
   realMix: Mix;
   simMix: Mix;
   realSentiment: number | null;
@@ -264,6 +268,38 @@ export interface BacktestThreadArgs {
   platform?: Platform;
   /** The thread list's options the platform was built with; kept in run.json. */
   options?: Record<string, unknown>;
+  /** The simulation's share of the budget; scoring runs on the rest. Default: unlimited. */
+  maxCalls?: number;
+  /** Fewer non-OP real comments than this: skip without a call. Default: 0. */
+  minRealComments?: number;
+}
+
+const replies = (n: number): string => `${n} real repl${n === 1 ? 'y' : 'ies'}`;
+
+function skippedScore(a: BacktestThreadArgs, platform: Platform): ThreadScore {
+  const n = crowdOf(a.real).length;
+  return {
+    id: a.real.id,
+    title: a.real.post.title,
+    runDir: a.runDir,
+    aborted: null,
+    truncatedAtStep: null,
+    skipped: `skipped: ${replies(n)}`,
+    hours: ageHours(a.steps, platform.stepMinutes),
+    realPoints: a.real.points,
+    simPoints: 0,
+    realComments: n,
+    simComments: 0,
+    commentRatio: null,
+    themes: [],
+    recall: null,
+    tv: null,
+    realMix: {},
+    simMix: {},
+    realSentiment: null,
+    simSentiment: null,
+    sentimentGap: null
+  };
 }
 
 export async function backtestThread(
@@ -271,6 +307,12 @@ export async function backtestThread(
 ): Promise<ThreadScore> {
   const { llm, real } = a;
   const platform = a.platform ?? hn;
+  if (crowdOf(real).length < (a.minRealComments ?? 0)) {
+    const score = skippedScore(a, platform);
+    mkdirSync(a.runDir, { recursive: true });
+    writeFileSync(join(a.runDir, 'score.json'), JSON.stringify(score, null, 2));
+    return score;
+  }
   const seed: Seed = {
     ...a.seed,
     context: real.context,
@@ -306,8 +348,14 @@ export async function backtestThread(
     runDir: a.runDir,
     steps: a.steps,
     platform,
-    author: real.author
+    author: real.author,
+    maxCalls: a.maxCalls
   });
+  if (res.truncatedAtStep !== null)
+    writeFileSync(
+      join(a.runDir, RUN_FILE),
+      JSON.stringify({ ...meta, truncatedAtStep: res.truncatedAtStep }, null, 2)
+    );
   const simLabels = await ensureLabels(llm, a.runDir);
   const metrics = computeMetrics(res.events, simLabels, a.personas, platform);
   writeFileSync(
@@ -331,7 +379,10 @@ export async function backtestThread(
     (x) => x.length > 0,
     () => extractThemes(llm, platform, real)
   );
-  const raised = await judgeRecall(llm, platform, themes, simThread);
+  const raised =
+    themes.length === 0
+      ? []
+      : await judgeRecall(llm, platform, themes, simThread);
 
   const simCrowd = [...res.state.comments.values()].filter(
     (c) => c.author !== FOUNDER
@@ -345,7 +396,9 @@ export async function backtestThread(
     title: real.post.title,
     runDir: a.runDir,
     aborted: res.aborted,
-    hours: ageHours(a.steps, platform.stepMinutes),
+    truncatedAtStep: res.truncatedAtStep,
+    skipped: null,
+    hours: ageHours(res.truncatedAtStep ?? a.steps, platform.stepMinutes),
     realPoints: real.points,
     simPoints: postPoints(res.state),
     realComments: crowd.length,
