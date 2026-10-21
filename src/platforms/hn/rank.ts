@@ -21,8 +21,6 @@ export function bandFor(score: number): Band {
 /**
  * Share of the population that opens the thread during one step in this band. Backtest round
  * calib-hn-1 scaled all bands by 0.4: at 1 / .75 / .4 / .3 the sim made 3–20× the real comments.
- * The 2026-10-21 timeline fit (239 Show HN posts) put new-page comment rates 3–5× lower still;
- * page2 and new are halved only, since the same fraction also brings the votes a post needs to rise.
  */
 export function visitorFraction(band: Band, step: number): number {
   switch (band) {
@@ -31,9 +29,9 @@ export function visitorFraction(band: Band, step: number): number {
     case 'top30':
       return 0.3;
     case 'page2':
-      return 0.12;
+      return 0.16;
     case 'new':
-      return step < 3 ? 0.06 : 0.02;
+      return step < 3 ? 0.12 : 0.05;
   }
 }
 
