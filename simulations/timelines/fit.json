@@ -1,0 +1,586 @@
+{
+  "stories": 239,
+  "snapshots": 12246,
+  "steps": [
+    {
+      "step": 0,
+      "stories": 158,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0
+    },
+    {
+      "step": 1,
+      "stories": 157,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0
+    },
+    {
+      "step": 2,
+      "stories": 156,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0
+    },
+    {
+      "step": 3,
+      "stories": 159,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0
+    },
+    {
+      "step": 4,
+      "stories": 159,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0
+    },
+    {
+      "step": 5,
+      "stories": 160,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0.0125
+    },
+    {
+      "step": 6,
+      "stories": 169,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0.023668639053254437
+    },
+    {
+      "step": 7,
+      "stories": 171,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0.017543859649122806
+    },
+    {
+      "step": 8,
+      "stories": 179,
+      "medianPoints": 2,
+      "medianComments": 0,
+      "frontShare": 0.01675977653631285
+    },
+    {
+      "step": 9,
+      "stories": 185,
+      "medianPoints": 2,
+      "medianComments": 0,
+      "frontShare": 0.016216216216216217
+    },
+    {
+      "step": 10,
+      "stories": 186,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0.016129032258064516
+    },
+    {
+      "step": 11,
+      "stories": 189,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0.010582010582010581
+    },
+    {
+      "step": 12,
+      "stories": 190,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0.005263157894736842
+    },
+    {
+      "step": 13,
+      "stories": 188,
+      "medianPoints": 1,
+      "medianComments": 0,
+      "frontShare": 0.005319148936170213
+    },
+    {
+      "step": 14,
+      "stories": 197,
+      "medianPoints": 2,
+      "medianComments": 0,
+      "frontShare": 0.005076142131979695
+    },
+    {
+      "step": 15,
+      "stories": 196,
+      "medianPoints": 2,
+      "medianComments": 0,
+      "frontShare": 0.00510204081632653
+    },
+    {
+      "step": 16,
+      "stories": 192,
+      "medianPoints": 2,
+      "medianComments": 0,
+      "frontShare": 0.005208333333333333
+    },
+    {
+      "step": 17,
+      "stories": 186,
+      "medianPoints": 2,
+      "medianComments": 0,
+      "frontShare": 0.005376344086021506
+    }
+  ],
+  "frontByPoints": [
+    {
+      "step": 0,
+      "points": "1-4",
+      "stories": 158,
+      "share": 0
+    },
+    {
+      "step": 1,
+      "points": "1-4",
+      "stories": 156,
+      "share": 0
+    },
+    {
+      "step": 1,
+      "points": "5-9",
+      "stories": 1,
+      "share": 0
+    },
+    {
+      "step": 2,
+      "points": "1-4",
+      "stories": 154,
+      "share": 0
+    },
+    {
+      "step": 2,
+      "points": "5-9",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 3,
+      "points": "1-4",
+      "stories": 156,
+      "share": 0
+    },
+    {
+      "step": 3,
+      "points": "5-9",
+      "stories": 3,
+      "share": 0
+    },
+    {
+      "step": 4,
+      "points": "1-4",
+      "stories": 156,
+      "share": 0
+    },
+    {
+      "step": 4,
+      "points": "5-9",
+      "stories": 3,
+      "share": 0
+    },
+    {
+      "step": 5,
+      "points": "1-4",
+      "stories": 153,
+      "share": 0
+    },
+    {
+      "step": 5,
+      "points": "5-9",
+      "stories": 5,
+      "share": 0
+    },
+    {
+      "step": 5,
+      "points": "20-49",
+      "stories": 2,
+      "share": 1
+    },
+    {
+      "step": 6,
+      "points": "1-4",
+      "stories": 158,
+      "share": 0
+    },
+    {
+      "step": 6,
+      "points": "5-9",
+      "stories": 7,
+      "share": 0.14285714285714285
+    },
+    {
+      "step": 6,
+      "points": "10-19",
+      "stories": 1,
+      "share": 1
+    },
+    {
+      "step": 6,
+      "points": "20-49",
+      "stories": 2,
+      "share": 1
+    },
+    {
+      "step": 6,
+      "points": "50+",
+      "stories": 1,
+      "share": 0
+    },
+    {
+      "step": 7,
+      "points": "1-4",
+      "stories": 157,
+      "share": 0
+    },
+    {
+      "step": 7,
+      "points": "5-9",
+      "stories": 10,
+      "share": 0.1
+    },
+    {
+      "step": 7,
+      "points": "10-19",
+      "stories": 1,
+      "share": 0
+    },
+    {
+      "step": 7,
+      "points": "20-49",
+      "stories": 2,
+      "share": 1
+    },
+    {
+      "step": 7,
+      "points": "50+",
+      "stories": 1,
+      "share": 0
+    },
+    {
+      "step": 8,
+      "points": "1-4",
+      "stories": 165,
+      "share": 0
+    },
+    {
+      "step": 8,
+      "points": "5-9",
+      "stories": 9,
+      "share": 0
+    },
+    {
+      "step": 8,
+      "points": "10-19",
+      "stories": 2,
+      "share": 0.5
+    },
+    {
+      "step": 8,
+      "points": "20-49",
+      "stories": 2,
+      "share": 1
+    },
+    {
+      "step": 8,
+      "points": "50+",
+      "stories": 1,
+      "share": 0
+    },
+    {
+      "step": 9,
+      "points": "1-4",
+      "stories": 170,
+      "share": 0
+    },
+    {
+      "step": 9,
+      "points": "5-9",
+      "stories": 9,
+      "share": 0
+    },
+    {
+      "step": 9,
+      "points": "10-19",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 9,
+      "points": "20-49",
+      "stories": 3,
+      "share": 1
+    },
+    {
+      "step": 9,
+      "points": "50+",
+      "stories": 1,
+      "share": 0
+    },
+    {
+      "step": 10,
+      "points": "1-4",
+      "stories": 169,
+      "share": 0
+    },
+    {
+      "step": 10,
+      "points": "5-9",
+      "stories": 11,
+      "share": 0
+    },
+    {
+      "step": 10,
+      "points": "10-19",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 10,
+      "points": "20-49",
+      "stories": 3,
+      "share": 1
+    },
+    {
+      "step": 10,
+      "points": "50+",
+      "stories": 1,
+      "share": 0
+    },
+    {
+      "step": 11,
+      "points": "1-4",
+      "stories": 172,
+      "share": 0
+    },
+    {
+      "step": 11,
+      "points": "5-9",
+      "stories": 10,
+      "share": 0
+    },
+    {
+      "step": 11,
+      "points": "10-19",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 11,
+      "points": "20-49",
+      "stories": 3,
+      "share": 0.6666666666666666
+    },
+    {
+      "step": 11,
+      "points": "50+",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 12,
+      "points": "1-4",
+      "stories": 173,
+      "share": 0
+    },
+    {
+      "step": 12,
+      "points": "5-9",
+      "stories": 11,
+      "share": 0
+    },
+    {
+      "step": 12,
+      "points": "10-19",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 12,
+      "points": "20-49",
+      "stories": 2,
+      "share": 0.5
+    },
+    {
+      "step": 12,
+      "points": "50+",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 13,
+      "points": "1-4",
+      "stories": 170,
+      "share": 0
+    },
+    {
+      "step": 13,
+      "points": "5-9",
+      "stories": 12,
+      "share": 0
+    },
+    {
+      "step": 13,
+      "points": "10-19",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 13,
+      "points": "20-49",
+      "stories": 2,
+      "share": 0.5
+    },
+    {
+      "step": 13,
+      "points": "50+",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 14,
+      "points": "1-4",
+      "stories": 178,
+      "share": 0
+    },
+    {
+      "step": 14,
+      "points": "5-9",
+      "stories": 13,
+      "share": 0
+    },
+    {
+      "step": 14,
+      "points": "10-19",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 14,
+      "points": "20-49",
+      "stories": 2,
+      "share": 0.5
+    },
+    {
+      "step": 14,
+      "points": "50+",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 15,
+      "points": "1-4",
+      "stories": 177,
+      "share": 0
+    },
+    {
+      "step": 15,
+      "points": "5-9",
+      "stories": 13,
+      "share": 0
+    },
+    {
+      "step": 15,
+      "points": "10-19",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 15,
+      "points": "20-49",
+      "stories": 2,
+      "share": 0.5
+    },
+    {
+      "step": 15,
+      "points": "50+",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 16,
+      "points": "1-4",
+      "stories": 173,
+      "share": 0
+    },
+    {
+      "step": 16,
+      "points": "5-9",
+      "stories": 13,
+      "share": 0
+    },
+    {
+      "step": 16,
+      "points": "10-19",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 16,
+      "points": "20-49",
+      "stories": 2,
+      "share": 0.5
+    },
+    {
+      "step": 16,
+      "points": "50+",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 17,
+      "points": "1-4",
+      "stories": 167,
+      "share": 0
+    },
+    {
+      "step": 17,
+      "points": "5-9",
+      "stories": 13,
+      "share": 0
+    },
+    {
+      "step": 17,
+      "points": "10-19",
+      "stories": 2,
+      "share": 0
+    },
+    {
+      "step": 17,
+      "points": "20-49",
+      "stories": 1,
+      "share": 0
+    },
+    {
+      "step": 17,
+      "points": "50+",
+      "stories": 3,
+      "share": 0.3333333333333333
+    }
+  ],
+  "thresholds": {
+    "top10": null,
+    "top30": 7.4780174092446225,
+    "page2": 0.8100914649187477
+  },
+  "ordered": false,
+  "fractions": {
+    "top10": null,
+    "top30": 1,
+    "page2": 0.2490497737556561,
+    "newEarly": 0.03646849291832754,
+    "newLate": 0.006784474597664878
+  },
+  "commentsPerStep": {
+    "top10": null,
+    "top30": 1.5116279069767442,
+    "page2": 0.3764705882352941,
+    "newEarly": 0.05512679162072767,
+    "newLate": 0.010255601136005049
+  }
+}
