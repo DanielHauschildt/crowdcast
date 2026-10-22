@@ -4,15 +4,26 @@ import { EVENTS_FILE, readEvents } from './events.js';
 import { labelComments, type CommentLabel } from './label.js';
 import type { Llm } from './llm.js';
 import { computeMetrics, type Metrics } from './metrics.js';
+import type { Author, Platform } from './platform.js';
+import { loadPlatform } from './platforms/index.js';
 import { renderThread, replay } from './thread.js';
 import { FOUNDER, type PersonaSet, type Post, type SimEvent } from './types.js';
 
 export const DISCLAIMER =
   '**Synthetic LLM simulation — hypotheses, not a forecast.**';
+export const disclaimerFor = (
+  platform: Pick<Platform, 'disclaimer'>
+): string =>
+  platform.disclaimer ? `${DISCLAIMER} ${platform.disclaimer}` : DISCLAIMER;
 export const RUN_FILE = 'run.json';
 export const PERSONAS_FILE = 'personas.json';
 
 export interface RunMeta {
+  /** Absent in runs from before platforms → hn. */
+  platform?: string;
+  /** platform.yaml's author and extra keys; absent in older runs → the platform's defaults. */
+  author?: Author;
+  options?: Record<string, unknown>;
   seedName: string;
   variant: string;
   rngSeed: number;
@@ -76,12 +87,15 @@ export function loadRun(runDir: string): {
   return { meta, events, personas, post: first.post };
 }
 
+export const runPlatform = (meta: RunMeta): Promise<Platform> =>
+  loadPlatform(meta.platform, meta.options, meta.author);
+
 export async function ensureLabels(
   llm: Llm,
   runDir: string
 ): Promise<CommentLabel[]> {
   const file = join(runDir, 'labels.json');
-  const { events, post } = loadRun(runDir);
+  const { meta, events, post } = loadRun(runDir);
   const crowd = [...replay(post, events).comments.values()].filter(
     (c) => c.author !== FOUNDER
   );
@@ -89,7 +103,7 @@ export async function ensureLabels(
     const cached = JSON.parse(readFileSync(file, 'utf8')) as CommentLabel[];
     if (cached.length === crowd.length) return cached;
   }
-  const labels = await labelComments(llm, post, crowd);
+  const labels = await labelComments(llm, post, crowd, await runPlatform(meta));
   writeFileSync(file, JSON.stringify(labels, null, 2));
   return labels;
 }
@@ -101,7 +115,8 @@ export function assembleReport(
   runName: string,
   post: Post,
   m: Metrics,
-  s: ReportSections
+  s: ReportSections,
+  platform: Platform
 ): string {
   const mix = Object.entries(m.objectionMix)
     .sort((a, b) => b[1]! - a[1]!)
@@ -112,9 +127,9 @@ export function assembleReport(
     {}
   );
   return [
-    DISCLAIMER,
+    disclaimerFor(platform),
     '',
-    `# Show HN rehearsal: ${post.title}`,
+    `# ${platform.reportTitle(post)}`,
     '',
     `Run \`${runName}\` · seed \`${meta.seedName}\` · variant \`${meta.variant}\` · rng ${meta.rngSeed}` +
       (m.aborted ? ` · **aborted: ${m.aborted}**` : ''),
@@ -158,21 +173,17 @@ export function assembleReport(
   ].join('\n');
 }
 
-const SYSTEM =
-  'You analyse a simulated Hacker News thread for the team launching the product. Be concrete and ' +
-  'critical. Every claim about the thread must cite comment ids in square brackets, e.g. [c4]. ' +
-  'Use only ids that appear in the thread. This is synthetic data: frame findings as hypotheses.';
-
 export async function writeReport(llm: Llm, runDir: string): Promise<string> {
   const { meta, events, personas, post } = loadRun(runDir);
+  const platform = await runPlatform(meta);
   const state = replay(post, events);
   const thread = renderThread(state);
   writeFileSync(
     join(runDir, 'thread.md'),
-    `${DISCLAIMER}\n\n\`\`\`text\n${thread}\n\`\`\`\n`
+    `${disclaimerFor(platform)}\n\n\`\`\`text\n${thread}\n\`\`\`\n`
   );
   const labels = await ensureLabels(llm, runDir);
-  const metrics = computeMetrics(events, labels, personas);
+  const metrics = computeMetrics(events, labels, personas, platform);
   writeFileSync(join(runDir, 'metrics.json'), JSON.stringify(metrics, null, 2));
 
   const basePrompt = [
@@ -195,7 +206,7 @@ export async function writeReport(llm: Llm, runDir: string): Promise<string> {
   for (let attempt = 0; attempt < 2; attempt++) {
     const res = await llm.call({
       tier: 'opus',
-      system: SYSTEM,
+      system: platform.reportSystem,
       prompt,
       schema: SCHEMA,
       validate: isSections,
@@ -209,7 +220,14 @@ export async function writeReport(llm: Llm, runDir: string): Promise<string> {
       const file = join(runDir, 'report.md');
       writeFileSync(
         file,
-        assembleReport(meta, basename(runDir), post, metrics, res.value)
+        assembleReport(
+          meta,
+          basename(runDir),
+          post,
+          metrics,
+          res.value,
+          platform
+        )
       );
       return file;
     }

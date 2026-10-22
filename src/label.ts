@@ -1,4 +1,6 @@
 import type { Llm } from './llm.js';
+import type { Platform } from './platform.js';
+import hn from './platforms/hn/index.js';
 import type { Comment } from './thread.js';
 import type { Post } from './types.js';
 
@@ -59,7 +61,8 @@ const SCHEMA = {
 export async function labelComments(
   llm: Llm,
   post: Post,
-  comments: readonly Comment[]
+  comments: readonly Comment[],
+  platform: Platform = hn
 ): Promise<CommentLabel[]> {
   const batches = Array.from(
     { length: Math.ceil(comments.length / BATCH) },
@@ -71,8 +74,7 @@ export async function labelComments(
       const res = await llm.call({
         tier: 'haiku',
         label: `labels:${i}`,
-        system:
-          'You classify Hacker News comments about a Show HN post. Pick the single best label per comment.',
+        system: platform.labelSystem,
         schema: SCHEMA,
         prompt: [
           `Post: ${post.title}`,

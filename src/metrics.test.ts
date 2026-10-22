@@ -48,6 +48,24 @@ describe('computeMetrics', () => {
     expect(m.peakBand).toBe('new');
   });
 
+  it('final points subtract downvotes', () => {
+    const vote = (voter: string, value: string): SimEvent => ({
+      kind: 'vote',
+      step: 0,
+      voter,
+      target: 'post',
+      value
+    });
+    const events: SimEvent[] = [
+      { kind: 'post', step: 0, post: makePost() },
+      vote('v1', 'up'),
+      vote('v2', 'up'),
+      vote('v3', 'down'),
+      end(0, 0, 2)
+    ];
+    expect(computeMetrics(events, [], personas).finalPoints).toBe(2);
+  });
+
   it('objection shares sum to 1 whenever something is labelled', () => {
     fc.assert(
       fc.property(

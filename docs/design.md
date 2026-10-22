@@ -15,8 +15,9 @@ or escalate, and which post variant does best.
 into `gtm/Marketing/experiments.md` (objection types, hypotheses H1/H9/H10) and
 `founder-answers.md`. Quality is judged by reading the output ("eyeball"); no backtest in v1.
 
-**Non-goals (v1).** Forecasting real installs/rank; other platforms (X, Reddit, PH); backtesting
-against real threads; dashboard UI; mid-run event injection. Output is synthetic hypothesis
+**Non-goals.** Forecasting real installs/rank; dashboard UI; mid-run event injection; Product Hunt.
+(v1 also excluded other platforms and backtesting; both are in scope since 2026-10: Reddit and Bluesky are
+backtested, X and LinkedIn run unvalidated with a disclaimer, see Platforms.) Output is synthetic hypothesis
 generation, never a forecast — every report states this on line one.
 
 **Origin.** A rebuild of the MiroFish idea (analysis: `simulations/mirofish-analysis.md`), dropping
@@ -95,6 +96,28 @@ Silent voter: `{id, segment, oneLiner}`; votes only.
 
 Personas are generated once per (seed folder, persona-seed) and cached in `personas.json`;
 variants of one compare share the same personas.
+
+## Platforms
+
+The engine is platform-neutral; everything a platform changes lives behind `Platform`
+(`src/platform.ts`): step length and default steps, `visibility(state, step, author?)` → band and
+visitor fraction, `rankScore` for step ends, the bands best first (for peak band / front page), the
+reaction vocabulary (`votes`, `commentVote`) and every prompt piece (agent, voter, founder,
+persona, label, report, backtest themes/recall). Votes keep their event shape; `value` is the
+platform's reaction (HN: `up`/`flag`; `flag` counts against a target, any other reaction for it).
+Optional: `fetchReference(id)` for backtests (a `RealThread`, with `author` where the platform knows the poster),
+`withOptions(options, author?)` for extra platform.yaml keys and the author the prompts may name, `fit(file)` for
+`crowdcast fit`, and `disclaimer` for unvalidated platforms. `visibility` and `rankScore` get the author per call.
+
+HN (`src/platforms/hn/`) is the default and the reference implementation; its golden test pins
+events and prompt hashes. A seed picks a platform with an optional `platform.yaml`
+(`platform: hn`, `author: {followers, audience, connections}`, other keys → options); `--platform` on
+`run`/`compare` overrides it, and `run.json` records the platform, author and options (older runs without them are
+HN with default options). Backtest list lines may carry per-thread options (`<id> key=value …`).
+
+To add one: create `src/platforms/<id>/index.ts` with a default-exported `Platform`. No shared file
+changes — `loadPlatform(id)` (`src/platforms/index.ts`) imports the folder dynamically and lists the
+known folders when an id is missing.
 
 ## Simulation loop
 

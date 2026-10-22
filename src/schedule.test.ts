@@ -2,12 +2,8 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { makePersona, makePost, makeVoter } from '../test/fixtures.js';
 import { rngFor } from './rng.js';
-import {
-  BAND_ORDER,
-  bandFor,
-  planVisits,
-  visitorFraction
-} from './schedule.js';
+import { BAND_ORDER, bandFor, visitorFraction } from './platforms/hn/rank.js';
+import { planVisits } from './schedule.js';
 import { emptyThread, replay } from './thread.js';
 
 const personas = Array.from({ length: 30 }, (_, i) =>
@@ -48,16 +44,14 @@ describe('planVisits', () => {
         const state = emptyThread(makePost());
         const a = planVisits({
           rng: rngFor(seed, step),
-          band: 'top30',
-          step,
+          fraction: visitorFraction('top30', step),
           personas,
           voters,
           state
         });
         const b = planVisits({
           rng: rngFor(seed, step),
-          band: 'top30',
-          step,
+          fraction: visitorFraction('top30', step),
           personas,
           voters,
           state
@@ -92,8 +86,7 @@ describe('planVisits', () => {
     const all = personas.map((p) => ({ ...p, activity: 1 }));
     const plan = planVisits({
       rng: rngFor(1, 1),
-      band: 'top10',
-      step: 1,
+      fraction: visitorFraction('top10', 1),
       personas: all,
       voters,
       state

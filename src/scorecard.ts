@@ -1,33 +1,108 @@
 import { spearman, type ThreadScore } from './backtest.js';
 import { DISCLAIMER } from './report.js';
+import { mulberry32, shuffle } from './rng.js';
 import { ageHours } from './schedule.js';
 
-export function parseThreadList(text: string): number[] {
-  const ids: number[] = [];
+export interface ThreadEntry {
+  id: number;
+  /** Platform options for this thread, e.g. `subreddit=selfhosted`. */
+  options: Record<string, unknown>;
+}
+
+/** One id per line, optionally followed by `key=value` options; `#` starts a comment. */
+export function parseThreadEntries(text: string): ThreadEntry[] {
+  const entries: ThreadEntry[] = [];
   text.split('\n').forEach((raw, i) => {
-    const line = raw.replace(/#.*$/, '').trim();
-    if (!line) return;
-    if (!/^\d+$/.test(line))
-      throw new Error(
-        `threads list line ${i + 1}: "${raw.trim()}" is not an HN id`
-      );
-    ids.push(Number(line));
+    const [id, ...pairs] = raw.replace(/#.*$/, '').trim().split(/\s+/);
+    if (!id) return;
+    const fail = (msg: string): never => {
+      throw new Error(`threads list line ${i + 1}: "${raw.trim()}" ${msg}`);
+    };
+    if (!/^\d+$/.test(id)) fail('does not start with a thread id');
+    const options: Record<string, unknown> = {};
+    for (const pair of pairs) {
+      const m = /^(\w+)=(\S+)$/.exec(pair);
+      if (!m) return fail(`: "${pair}" is not key=value`);
+      options[m[1]!] = /^-?\d+(\.\d+)?$/.test(m[2]!) ? Number(m[2]) : m[2];
+    }
+    entries.push({ id: Number(id), options });
   });
-  return ids;
+  return entries;
+}
+
+export const parseThreadList = (text: string): number[] =>
+  parseThreadEntries(text).map((e) => e.id);
+
+const HOLDOUT_SHARE = 0.3;
+
+/** Fixed hash split: an id is in the holdout set forever, whoever builds the lists. */
+export const isHoldout = (id: number): boolean =>
+  mulberry32(id)() < HOLDOUT_SHARE;
+
+export function selectIds(
+  ids: readonly number[],
+  opts: { sample?: number; limit?: number; seed: number }
+): number[] {
+  let out = [...ids];
+  if (opts.sample !== undefined) {
+    const keep = new Set(
+      shuffle(mulberry32(opts.seed), ids).slice(0, opts.sample)
+    );
+    out = out.filter((id) => keep.has(id));
+  }
+  return opts.limit === undefined ? out : out.slice(0, opts.limit);
+}
+
+export interface Interval {
+  lo: number;
+  hi: number;
+}
+
+/** Percentile bootstrap interval of `stat` over `xs`. */
+export function bootstrapInterval(
+  xs: readonly number[],
+  stat: (xs: readonly number[]) => number,
+  seed: number,
+  level = 0.9,
+  reps = 1000
+): Interval | null {
+  if (xs.length === 0) return null;
+  const rng = mulberry32(seed);
+  const stats = Array.from({ length: reps }, () =>
+    stat(xs.map(() => xs[Math.floor(rng() * xs.length)]!))
+  ).sort((a, b) => a - b);
+  const tail = (1 - level) / 2;
+  return {
+    lo: stats[Math.floor(tail * reps)]!,
+    hi: stats[Math.ceil((1 - tail) * reps) - 1]!
+  };
 }
 
 export interface Aggregate {
   completed: number;
   aborted: number[];
+  /** Scored on a shortened run; included in every number. */
+  truncated: number[];
+  skipped: number[];
   recall: number | null;
+  recallCi: Interval | null;
   tv: number | null;
+  tvCi: Interval | null;
   spearman: number | null;
   commentRatio: number | null;
+  commentRatioMean: number | null;
+  commentRatioCi: Interval | null;
   sentimentGap: number | null;
 }
 
 const mean = (xs: readonly number[]): number | null =>
   xs.length === 0 ? null : xs.reduce((a, x) => a + x, 0) / xs.length;
+
+/** A thread with no simulated comments counts as ratio 0.01, not log 0 = -Infinity. */
+const RATIO_FLOOR = 0.01;
+
+const geoMean = (xs: readonly number[]): number =>
+  Math.exp(mean(xs.map((x) => Math.log(Math.max(x, RATIO_FLOOR))))!);
 
 function median(xs: readonly number[]): number | null {
   if (xs.length === 0) return null;
@@ -39,18 +114,28 @@ function median(xs: readonly number[]): number | null {
 const present = <T>(xs: ReadonlyArray<T | null>): T[] =>
   xs.filter((x): x is T => x !== null);
 
-export function aggregate(scores: readonly ThreadScore[]): Aggregate {
-  const done = scores.filter((s) => !s.aborted);
+export function aggregate(scores: readonly ThreadScore[], seed = 1): Aggregate {
+  const done = scores.filter((s) => !s.aborted && !s.skipped);
+  const recalls = present(done.map((s) => s.recall));
+  const tvs = present(done.map((s) => s.tv));
+  const ratios = present(done.map((s) => s.commentRatio));
+  const avg = (xs: readonly number[]): number => mean(xs)!;
   return {
     completed: done.length,
     aborted: scores.filter((s) => s.aborted).map((s) => s.id),
-    recall: mean(present(done.map((s) => s.recall))),
-    tv: mean(done.map((s) => s.tv)),
+    truncated: done.filter((s) => s.truncatedAtStep !== null).map((s) => s.id),
+    skipped: scores.filter((s) => s.skipped).map((s) => s.id),
+    recall: mean(recalls),
+    recallCi: bootstrapInterval(recalls, avg, seed),
+    tv: mean(tvs),
+    tvCi: bootstrapInterval(tvs, avg, seed),
     spearman: spearman(
       done.map((s) => s.simPoints),
       done.map((s) => s.realPoints)
     ),
-    commentRatio: median(present(done.map((s) => s.commentRatio))),
+    commentRatio: median(ratios),
+    commentRatioMean: ratios.length === 0 ? null : geoMean(ratios),
+    commentRatioCi: bootstrapInterval(ratios, geoMean, seed),
     sentimentGap: mean(present(done.map((s) => s.sentimentGap)))
   };
 }
@@ -59,13 +144,47 @@ const fmt = (x: number | null, digits = 2): string =>
   x === null ? '–' : x.toFixed(digits);
 const pct = (x: number | null): string =>
   x === null ? '–' : `${Math.round(x * 100)}%`;
+const withCi = (
+  x: number | null,
+  ci: Interval | null,
+  show: (x: number) => string
+): string =>
+  x === null || ci === null
+    ? '–'
+    : `${show(x)} [${show(ci.lo)}–${show(ci.hi)}]`;
+const pctCi = (x: number | null, ci: Interval | null): string =>
+  withCi(x, ci, pct);
+const fmtCi = (x: number | null, ci: Interval | null): string =>
+  withCi(x, ci, fmt);
 const hoursOf = (steps: number): string =>
   `${Number(ageHours(steps).toFixed(1))}h`;
+const showHours = (h: number): string => `${Number(h.toFixed(1))}h`;
+
+/** `5 (2†, 1 skipped)`: completed threads, of which truncated, plus skipped ones. */
+function completedCell(agg: Aggregate): string {
+  const extra = [
+    agg.truncated.length > 0 ? `${agg.truncated.length}†` : '',
+    agg.skipped.length > 0 ? `${agg.skipped.length} skipped` : ''
+  ].filter(Boolean);
+  return extra.length === 0 ? '' : ` (${extra.join(', ')})`;
+}
+
+function status(s: ThreadScore): string {
+  if (s.skipped) return s.skipped;
+  if (s.aborted) return `aborted: ${s.aborted}`;
+  if (s.truncatedAtStep !== null)
+    return `truncated at step ${s.truncatedAtStep} (${showHours(s.hours)})`;
+  return 'ok';
+}
 
 export interface ScorecardMeta {
   stamp: string;
   steps: number;
   seed: number;
+  /** `train`, `holdout`, `all`, or `ids` for ids given on the command line. */
+  set: string;
+  /** Default: hn. */
+  platform?: string;
 }
 
 export function scorecardMarkdown(
@@ -79,28 +198,36 @@ export function scorecardMarkdown(
     '',
     `# Backtest scorecard ${meta.stamp}`,
     '',
-    `${scores.length} real Show HN threads, each simulated from its post alone · ${meta.steps} steps (${h}) · seed ${meta.seed}. ` +
+    `${scores.length} real ${!meta.platform || meta.platform === 'hn' ? 'Show HN' : meta.platform} threads (${meta.set} set), each simulated from its post alone · ${meta.steps} steps (${h}) · seed ${meta.seed}. ` +
       `Simulated points @ ${h} are ranked against real final points (order, not absolute).`,
     '',
     '## Aggregate',
     '',
-    `| Completed | Theme recall | Objection-mix TV ↓ | Spearman ρ (points @ ${h} vs real) | Comment ratio (median) | Sentiment gap (mean, sim − real) |`,
-    '|---|---|---|---|---|---|',
-    `| ${agg.completed}/${scores.length} | ${pct(agg.recall)} | ${fmt(agg.tv)} | ${fmt(agg.spearman)} | ${fmt(agg.commentRatio)} | ${fmt(agg.sentimentGap)} |`,
+    'Means with a bootstrap 90% interval [lo–hi]: a change between rounds inside the interval is noise.',
+    '',
+    `| Completed | Theme recall | Objection-mix TV ↓ | Spearman ρ (points @ ${h} vs real) | Comment ratio (median) | Comment ratio (geo. mean) | Sentiment gap (mean, sim − real) |`,
+    '|---|---|---|---|---|---|---|',
+    `| ${agg.completed}/${scores.length}${completedCell(agg)} | ${pctCi(agg.recall, agg.recallCi)} | ${fmtCi(agg.tv, agg.tvCi)} | ${fmt(agg.spearman)} | ${fmt(agg.commentRatio)} | ${fmtCi(agg.commentRatioMean, agg.commentRatioCi)} | ${fmt(agg.sentimentGap)} |`,
     '',
     '## Per thread',
     '',
-    `| HN id | Title | Real points | Sim points @ ${h} | Real comments | Sim comments | Ratio | Recall | TV | Sentiment real / sim | Status |`,
+    `| Thread id | Title | Real points | Sim points @ ${h} | Real comments | Sim comments | Ratio | Recall | TV | Sentiment real / sim | Status |`,
     '|---|---|---|---|---|---|---|---|---|---|---|',
     ...scores.map(
       (s) =>
-        `| ${s.id} | ${s.title.replace(/\|/g, '/')} | ${s.realPoints} | ${s.simPoints} | ${s.realComments} | ${s.simComments} | ${fmt(s.commentRatio)} | ${pct(s.recall)} | ${fmt(s.tv)} | ${fmt(s.realSentiment)} / ${fmt(s.simSentiment)} | ${s.aborted ? `aborted: ${s.aborted}` : 'ok'} |`
+        `| ${s.id}${s.truncatedAtStep === null ? '' : '†'} | ${s.title.replace(/\|/g, '/')} | ${s.realPoints} | ${s.simPoints} | ${s.realComments} | ${s.simComments} | ${fmt(s.commentRatio)} | ${pct(s.recall)} | ${fmt(s.tv)} | ${fmt(s.realSentiment)} / ${fmt(s.simSentiment)} | ${status(s)} |`
     ),
     '',
+    ...(agg.truncated.length > 0
+      ? [
+          '† Truncated: the simulation hit its share of `--max-calls`, so its points and comments are at the age in Status, while the real values are final (no real timeline at that age).',
+          ''
+        ]
+      : []),
     '## Themes of the real threads (✓ raised in the simulation)',
     ''
   ];
-  for (const s of scores) {
+  for (const s of scores.filter((s) => !s.skipped)) {
     lines.push(
       `### ${s.id} — ${s.title}`,
       '',
@@ -114,12 +241,12 @@ export function scorecardMarkdown(
 }
 
 export const HISTORY_HEADER =
-  '| Stamp | Steps | Seed | Completed | Recall | TV | Spearman | Comment ratio | Sentiment gap | Note |\n' +
-  '|---|---|---|---|---|---|---|---|---|---|';
+  '| Stamp | Steps | Seed | Completed | Recall [90%] | TV [90%] | Spearman | Comment ratio | Sentiment gap | Note | Comment ratio geo. [90%] | Set | n |\n' +
+  '|---|---|---|---|---|---|---|---|---|---|---|---|---|';
 
 export function historyRow(
   agg: Aggregate,
-  meta: ScorecardMeta & { note: string }
+  meta: ScorecardMeta & { n: number; note: string }
 ): string {
-  return `| ${meta.stamp} | ${meta.steps} | ${meta.seed} | ${agg.completed} | ${pct(agg.recall)} | ${fmt(agg.tv)} | ${fmt(agg.spearman)} | ${fmt(agg.commentRatio)} | ${fmt(agg.sentimentGap)} | ${meta.note.replace(/\|/g, '/')} |`;
+  return `| ${meta.stamp} | ${meta.steps} | ${meta.seed} | ${agg.completed}${completedCell(agg)} | ${pctCi(agg.recall, agg.recallCi)} | ${fmtCi(agg.tv, agg.tvCi)} | ${fmt(agg.spearman)} | ${fmt(agg.commentRatio)} | ${fmt(agg.sentimentGap)} | ${meta.note.replace(/\|/g, '/')} | ${fmtCi(agg.commentRatioMean, agg.commentRatioCi)} | ${meta.set} | ${meta.n} |`;
 }

@@ -16,6 +16,8 @@ import {
 import { estimateCalls, runSimulation } from './engine.js';
 import { EVENTS_FILE, readEvents } from './events.js';
 import { BudgetExceeded, FakeLlm, LlmFatal, type LlmRequest } from './llm.js';
+import type { Platform } from './platform.js';
+import hn from './platforms/hn/index.js';
 import type { PersonaSet, SimEvent } from './types.js';
 
 const personas: PersonaSet = {
@@ -149,6 +151,30 @@ describe('runSimulation', () => {
     expect(res.aborted).toMatch(/max-calls/);
   });
 
+  it('ends truncated before a step that would overrun maxCalls, spending no call of it', async () => {
+    const run = (maxCalls?: number, llm = new FakeLlm(world())) =>
+      runSimulation({
+        post: makePost(),
+        seed: makeSeed(),
+        personas,
+        llm,
+        rngSeed: 1,
+        runDir: dir(),
+        maxCalls
+      });
+    const full = await run();
+    expect(full.truncatedAtStep).toBeNull();
+    const [c0, c1] = ends(full.events).map((e) => e.calls);
+    const llm = new FakeLlm(world());
+    const res = await run(c0! + c1! + 1, llm);
+    expect(res.aborted).toBeNull();
+    expect(res.truncatedAtStep).toBe(2);
+    expect(ends(res.events)).toHaveLength(2);
+    expect(res.events.some((e) => e.kind === 'abort')).toBe(false);
+    expect(llm.callCount).toBe(c0! + c1!);
+    expect(res.events).toEqual(full.events.slice(0, res.events.length));
+  });
+
   it('aborts when more than 10% of a step fails', async () => {
     const llm = new FakeLlm((req) =>
       req.label.startsWith('agent:') ? new Error('bad json') : world()(req)
@@ -244,5 +270,65 @@ describe('estimateCalls', () => {
     const b = estimateCalls(personas, 12);
     expect(b.total).toBeGreaterThan(a.total);
     expect(b.founder).toBe(12);
+  });
+});
+
+describe('a non-HN platform', () => {
+  it('runs on its own step length, vocabulary and visibility', async () => {
+    const ages: number[] = [];
+    const authors: unknown[] = [];
+    const fake: Platform = {
+      ...hn,
+      id: 'fake',
+      stepMinutes: 30,
+      defaultSteps: 4,
+      bands: ['feed'],
+      frontPage: ['feed'],
+      votes: ['like', 'none'],
+      commentVote: 'like',
+      visibility: (_s, _step, author) => {
+        authors.push(author);
+        return { band: 'feed', visitorFraction: 1 };
+      },
+      rankScore: (s, age) => {
+        ages.push(age);
+        return s.postUps;
+      }
+    };
+    const llm = new FakeLlm((req) => {
+      if (req.label.startsWith('agent:'))
+        return {
+          vote: 'like',
+          upvoteComments: ['c1'],
+          comment: null,
+          leave: false
+        };
+      if (req.label.startsWith('voters:'))
+        return {
+          ballots: [...req.prompt.matchAll(/- (v\d+):/g)].map((m) => ({
+            voterId: m[1],
+            postVote: 'like',
+            commentVotes: [{ id: 'c1', vote: 'like' }]
+          }))
+        };
+      return world()(req);
+    });
+    const res = await runSimulation({
+      post: makePost({ firstComment: 'Hello.' }),
+      seed: makeSeed({ author: { followers: 500 } }),
+      personas,
+      llm,
+      rngSeed: 1,
+      runDir: dir(),
+      platform: fake
+    });
+    expect(res.aborted).toBeNull();
+    expect(ends(res.events).map((e) => e.band)).toEqual(Array(4).fill('feed'));
+    expect(ages.slice(0, 2)).toEqual([0.5, 1]);
+    expect(authors[0]).toEqual({ followers: 500 });
+    const votes = res.events.filter((e) => e.kind === 'vote');
+    expect(votes.length).toBeGreaterThan(0);
+    expect(votes.every((e) => e.value === 'like')).toBe(true);
+    expect(JSON.stringify(llm.requests[0]!.schema)).toContain('"like"');
   });
 });

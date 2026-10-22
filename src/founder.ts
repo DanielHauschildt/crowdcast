@@ -1,4 +1,6 @@
 import type { Llm, LlmResult } from './llm.js';
+import type { Platform } from './platform.js';
+import hn from './platforms/hn/index.js';
 import {
   answeredByFounder,
   commentScore,
@@ -42,20 +44,15 @@ function isReplies(x: unknown): x is { replies: FounderReply[] } {
   );
 }
 
-const SYSTEM =
-  'You are the founder who submitted this Show HN and you are on comment duty. HN norms: ' +
-  'technical, modest, specific. No marketing language, no superlatives, no "great question". ' +
-  'Admit limitations plainly; state pricing and telemetry plainly when asked. Use the prepared ' +
-  'answers as facts but write naturally. Reply only where it adds information or corrects a ' +
-  'misunderstanding — replying to nothing is fine. Never reply to your own comments (marked OP), ' +
-  'and never reply again under a comment marked "↳ answered by OP". Prefer unanswered top-level ' +
-  'comments with the most points. Where a prepared answer is marked TODO(team), say plainly ' +
-  "that it is not decided yet and state what is known; never reply only to say you can't " +
-  `confirm something. At most ${MAX_REPLIES} replies.`;
-
 export async function founderTurn(
   llm: Llm,
-  args: { post: Post; founderAnswers: string; thread: string; step: number }
+  args: {
+    post: Post;
+    founderAnswers: string;
+    thread: string;
+    step: number;
+    platform?: Platform;
+  }
 ): Promise<LlmResult<FounderReply[]>> {
   const prompt = [
     `<prepared-answers>\n${args.founderAnswers}\n</prepared-answers>`,
@@ -66,7 +63,7 @@ export async function founderTurn(
   ].join('\n');
   const res = await llm.call({
     tier: 'sonnet',
-    system: SYSTEM,
+    system: (args.platform ?? hn).founderSystem(MAX_REPLIES),
     prompt,
     schema: FOUNDER_SCHEMA,
     validate: isReplies,

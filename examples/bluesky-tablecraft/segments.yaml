@@ -1,0 +1,18 @@
+active: 40
+voters: 150
+segments:
+  - id: data-engineers
+    share: 0.30
+    leanings: build pipelines and reports; care about CI, reproducibility, performance on big files
+  - id: rust-and-cli-fans
+    share: 0.25
+    leanings: like single binaries and fast CLIs; repost tools they would use; ask about internals
+  - id: dataviz-practitioners
+    share: 0.20
+    leanings: care about chart design, typography, accessibility, colour palettes; quote-post with opinions
+  - id: python-loyalists
+    share: 0.15
+    leanings: happy with matplotlib/seaborn/plotly; "why not just use X"
+  - id: drive-by
+    share: 0.10
+    leanings: one-liners, jokes, emoji reactions

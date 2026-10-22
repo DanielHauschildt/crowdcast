@@ -1,8 +1,7 @@
 import { appendFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { agentSystem } from './agents.js';
 import type { Llm } from './llm.js';
-import { loadRun } from './report.js';
+import { loadRun, runPlatform } from './report.js';
 import { renderThread, replay } from './thread.js';
 import type { Persona, SimEvent } from './types.js';
 
@@ -66,7 +65,8 @@ export async function interview(
   target: string,
   question: string
 ): Promise<{ answers: InterviewAnswer[]; markdown: string }> {
-  const { events, personas, post } = loadRun(runDir);
+  const { meta, events, personas, post } = loadRun(runDir);
+  const platform = await runPlatform(meta);
   const targets = resolveTargets(personas.personas, target);
   const thread = renderThread(replay(post, events), { maxChars: 12000 });
   const results = await Promise.all(
@@ -74,7 +74,7 @@ export async function interview(
       const res = await llm.call({
         tier: 'opus',
         label: `interview:${p.id}`,
-        system: `${agentSystem(p)}\n\nAfter the thread, a researcher interviews you. Answer in character, candidly, in 2–6 sentences.`,
+        system: `${platform.agentSystem(p)}\n\nAfter the thread, a researcher interviews you. Answer in character, candidly, in 2–6 sentences.`,
         prompt: [
           `<thread-as-it-ended>\n${thread}\n</thread-as-it-ended>`,
           `<what-you-did>\n${personaTranscript(events, p.id)}\n</what-you-did>`,

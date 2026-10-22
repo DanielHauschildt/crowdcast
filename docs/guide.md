@@ -35,7 +35,8 @@ Use it for: a Show HN or similar launch post, a pricing or licence announcement,
 change, a README rewrite — anything where a skeptical technical crowd will react in public.
 
 Don't use it for: predicting points, installs or revenue; replacing real user interviews;
-audiences that look nothing like Hacker News (the personas are HN-shaped).
+audiences that look nothing like Hacker News, Reddit, Bluesky, X or LinkedIn (see
+[Other platforms](#other-platforms)).
 
 ## How it works
 
@@ -192,3 +193,23 @@ Simulates every thread in `simulations/backtests/threads.txt` from its post alon
 against the real thread (theme recall, objection-mix distance, rank correlation, comment ratio,
 sentiment gap). Each run appends a row to `simulations/backtests/history.md`; keep a model or
 prompt change only if that row improves.
+
+Other platforms keep their own lists under `simulations/backtests/<platform>/`
+(`--platform reddit|bluesky`); `--set holdout` scores the threads that were never tuned on.
+
+## Other platforms
+
+The same seed runs on other platforms: add a `platform.yaml`. Each example below is the Tablecraft
+seed rewritten for that platform (post format, segments, platform options):
+
+```bash
+pnpm crowdcast run examples/reddit-tablecraft --steps 2     # r/SideProject self post; subreddit: in platform.yaml
+pnpm crowdcast run examples/bluesky-tablecraft --steps 2    # ≤ 300-char post; author.followers sizes the reach
+pnpm crowdcast run examples/x-tablecraft --steps 2          # 280-char post, repo link in the follow-up reply
+pnpm crowdcast run examples/linkedin-tablecraft --steps 2   # author.connections, audience and headline
+```
+
+Reddit and Bluesky are backtested against real threads; X and LinkedIn are not (no open data), so
+their reports say so on line one and their numbers are only good for comparing your own variants.
+Bring your own data with `crowdcast fit linkedin <post-analytics.csv> --followers N` and put the
+constants it prints into `platform.yaml`.

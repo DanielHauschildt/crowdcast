@@ -7,8 +7,13 @@ simulations/runs/
 simulations/compares/
 simulations/backtests/runs/
 simulations/backtests/threads/
+simulations/backtests/*/threads/
+simulations/timelines/data/
 simulations/backtests/personas/
 simulations/backtests/2*/
+simulations/backtests/*/personas/
+simulations/backtests/*/2*/
+simulations/timelines/fit.*
 simulations/seeds/*/personas/
 runs/
 compares/

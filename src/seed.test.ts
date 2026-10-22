@@ -67,6 +67,45 @@ describe('loadSeed', () => {
     expect(seed.hypotheses).toBe('');
   });
 
+  it('defaults to hn without platform.yaml', () => {
+    const seed = loadSeed(seedDir(base));
+    expect(seed.platform).toBe('hn');
+    expect(seed.author).toBeUndefined();
+    expect(seed.options).toEqual({});
+  });
+
+  it('reads platform, author and options from platform.yaml', () => {
+    const seed = loadSeed(
+      seedDir({
+        ...base,
+        'platform.yaml':
+          'platform: bluesky\nauthor:\n  followers: 1200\n  audience: devs\nfeed: discover\n'
+      })
+    );
+    expect(seed.platform).toBe('bluesky');
+    expect(seed.author).toEqual({ followers: 1200, audience: 'devs' });
+    expect(seed.options).toEqual({ feed: 'discover' });
+  });
+
+  it('rejects a malformed platform.yaml', () => {
+    expect(() =>
+      loadSeed(
+        seedDir({ ...base, 'platform.yaml': 'author:\n  followers: lots\n' })
+      )
+    ).toThrow(/platform\.yaml.*followers/);
+  });
+
+  it('reads author.connections and rejects a bad one', () => {
+    const yaml = (c: string): string =>
+      `platform: linkedin\nauthor:\n  followers: 1800\n  connections: ${c}\n`;
+    expect(
+      loadSeed(seedDir({ ...base, 'platform.yaml': yaml('1200') })).author
+    ).toEqual({ followers: 1800, connections: 1200 });
+    expect(() =>
+      loadSeed(seedDir({ ...base, 'platform.yaml': yaml('-1') }))
+    ).toThrow(/platform\.yaml.*author\.connections/);
+  });
+
   it('rejects shares that do not sum to 1', () => {
     const dir = seedDir({
       ...base,

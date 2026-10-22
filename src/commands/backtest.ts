@@ -14,27 +14,49 @@ import {
 } from '../backtest.js';
 import type { CliDeps } from '../cli.js';
 import type { FetchFn } from '../hn.js';
-import { loadOrGeneratePersonas } from '../personas.js';
+import { loadOrGeneratePersonas, personaCacheFile } from '../personas.js';
+import type { Platform } from '../platform.js';
+import { DEFAULT_PLATFORM, loadPlatform } from '../platforms/index.js';
 import {
   aggregate,
   historyRow,
   HISTORY_HEADER,
-  parseThreadList,
-  scorecardMarkdown
+  parseThreadEntries,
+  scorecardMarkdown,
+  selectIds
 } from '../scorecard.js';
 import { parseSegments } from '../seed.js';
 import type { Seed } from '../types.js';
 
-export const BACKTEST_USAGE = `  crowdcast backtest [<hn-id>…] [--threads simulations/backtests/threads.txt] [--steps 6]
-                     [--parallel 3] [--seed 1] [--concurrency 4] [--max-calls 400] [--note "…"]`;
+export const BACKTEST_USAGE = `  crowdcast backtest [<id>…] [--platform hn] [--threads simulations/backtests[/<platform>]/threads.txt]
+                     [--set train|holdout|all] [--sample N] [--limit N] [--steps 6] [--parallel 3] [--seed 1]
+                     [--concurrency 4] [--max-calls 400] [--score-reserve 30] [--min-real-comments 3] [--note "…"]`;
+
+/** HN's lists predate platforms and stay at the top; other platforms get a folder each. */
+export const defaultThreadsFile = (platform: string): string =>
+  platform === DEFAULT_PLATFORM
+    ? 'simulations/backtests/threads.txt'
+    : `simulations/backtests/${platform}/threads.txt`;
+
+type Deps = CliDeps & {
+  fetch?: FetchFn;
+  loadPlatform?: (id: string) => Promise<Platform>;
+};
 
 const OPTIONS = {
-  threads: { type: 'string', default: 'simulations/backtests/threads.txt' },
+  platform: { type: 'string', default: DEFAULT_PLATFORM },
+  threads: { type: 'string' },
+  set: { type: 'string', default: 'train' },
+  sample: { type: 'string' },
+  limit: { type: 'string' },
   steps: { type: 'string', default: '6' },
   parallel: { type: 'string', default: '3' },
   seed: { type: 'string', default: '1' },
   concurrency: { type: 'string', default: '4' },
   'max-calls': { type: 'string', default: '400' },
+  // Scoring a 60-comment thread: 4 + 4 label batches, themes, recall = 10 calls, ×3 attempts.
+  'score-reserve': { type: 'string', default: '30' },
+  'min-real-comments': { type: 'string', default: '3' },
   note: { type: 'string', default: '' }
 } as const;
 
@@ -56,10 +78,17 @@ async function pool<T>(
   );
 }
 
-export async function backtest(
-  argv: string[],
-  deps: CliDeps & { fetch?: FetchFn }
-): Promise<number> {
+function withThreadOptions(
+  platform: Platform,
+  options: Record<string, unknown>
+): Platform {
+  if (Object.keys(options).length === 0) return platform;
+  if (!platform.withOptions)
+    throw new Error(`platform ${platform.id} takes no thread options`);
+  return platform.withOptions(options);
+}
+
+export async function backtest(argv: string[], deps: Deps): Promise<number> {
   let v;
   let positionals;
   try {
@@ -87,21 +116,65 @@ type Values = ReturnType<
 async function runBacktest(
   v: Values,
   positionals: string[],
-  deps: CliDeps & { fetch?: FetchFn }
+  deps: Deps
 ): Promise<number> {
-  const threadsFile = resolve(v.threads);
+  const platform = await (deps.loadPlatform ?? loadPlatform)(v.platform);
+  const threadsFile = resolve(v.threads ?? defaultThreadsFile(platform.id));
   const root = dirname(threadsFile);
+  const holdout = join(root, 'holdout.txt');
+  const files: Partial<Record<string, string[]>> = {
+    train: [threadsFile],
+    holdout: [holdout],
+    all: [threadsFile, holdout]
+  };
+  const lists = files[v.set];
+  const count = (flag: string | undefined): number | undefined =>
+    flag === undefined ? undefined : Number(flag);
+  const sample = count(v.sample);
+  const limit = count(v.limit);
+  if (
+    !lists ||
+    [sample, limit].some(
+      (n) => n !== undefined && !(Number.isInteger(n) && n > 0)
+    )
+  ) {
+    deps.log(
+      `backtest: --set is train, holdout or all; --sample and --limit are positive integers\nusage:\n${BACKTEST_USAGE}`
+    );
+    return 2;
+  }
+  const set = positionals.length > 0 ? 'ids' : v.set;
+  const rngSeed = Number(v.seed);
+  const entries = (fs: readonly string[]) =>
+    fs.flatMap((f) => parseThreadEntries(readFileSync(f, 'utf8')));
   const ids =
     positionals.length > 0
       ? positionals.map(Number)
-      : parseThreadList(readFileSync(threadsFile, 'utf8'));
+      : selectIds(
+          entries(lists).map((e) => e.id),
+          { sample, limit, seed: rngSeed }
+        );
+  const optionsOf = new Map(
+    entries(files.all!.filter(existsSync)).map((e) => [e.id, e.options])
+  );
   if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || id <= 0)) {
-    deps.log(`backtest: no valid HN ids\nusage:\n${BACKTEST_USAGE}`);
+    deps.log(`backtest: no valid thread ids\nusage:\n${BACKTEST_USAGE}`);
     return 2;
   }
   const steps = Number(v.steps);
-  const rngSeed = Number(v.seed);
   const concurrency = Number(v.concurrency);
+  const maxCalls = Number(v['max-calls']);
+  const simCalls = maxCalls - Number(v['score-reserve']);
+  const minRealComments = Number(v['min-real-comments']);
+  if (
+    !(simCalls > 0) ||
+    !(Number.isInteger(minRealComments) && minRealComments >= 0)
+  ) {
+    deps.log(
+      `backtest: --score-reserve must leave the simulation some of --max-calls; --min-real-comments is a count\nusage:\n${BACKTEST_USAGE}`
+    );
+    return 2;
+  }
   const segs = parseSegments(readFileSync(join(root, 'segments.yaml'), 'utf8'));
   const audience: Seed = {
     name: 'backtest',
@@ -116,38 +189,53 @@ async function runBacktest(
   const personas = await loadOrGeneratePersonas(
     deps.makeLlm({ concurrency }),
     audience,
-    join(root, 'personas', `seed-${rngSeed}.json`)
+    personaCacheFile(root, platform.id, rngSeed),
+    platform
   );
   const stamp = stampOf(deps.now());
   deps.log(
-    `backtest ${stamp}: ${ids.length} threads, ${personas.personas.length} personas, ${personas.voters.length} voters, ${steps} steps`
+    `backtest ${stamp}: ${ids.length} threads (${set}), ${personas.personas.length} personas, ${personas.voters.length} voters, ${steps} steps`
   );
 
   const scores = new Map<number, ThreadScore>();
   await pool(ids, Number(v.parallel), async (id) => {
     try {
       const threadDir = join(root, 'threads', String(id));
-      const real = await loadOrFetchThread(threadDir, id, deps.fetch);
-      const runDir = join(root, 'runs', `${stamp}-hn${id}-s${rngSeed}`);
+      const real = await loadOrFetchThread(threadDir, id, deps.fetch, platform);
+      const options = optionsOf.get(id) ?? {};
+      const runDir = join(
+        root,
+        'runs',
+        `${stamp}-${platform.id}${id}-s${rngSeed}`
+      );
       mkdirSync(runDir, { recursive: true });
       const s = await backtestThread({
         llm: deps.makeLlm({
           concurrency,
-          maxCalls: Number(v['max-calls']),
+          maxCalls,
           logFile: join(runDir, 'calls.jsonl')
         }),
         real,
         threadDir,
         runDir,
-        seed: { ...audience, name: `hn-${id}`, dir: threadDir },
+        seed: { ...audience, name: `${platform.id}-${id}`, dir: threadDir },
         personas,
         steps,
-        rngSeed
+        rngSeed,
+        platform: withThreadOptions(platform, options),
+        options,
+        maxCalls: simCalls,
+        minRealComments
       });
       scores.set(id, s);
       deps.log(
-        `  ${id}: sim ${s.simPoints} pts / ${s.simComments} comments vs real ${s.realPoints} / ${s.realComments}` +
-          (s.aborted ? ` (aborted: ${s.aborted})` : '')
+        s.skipped
+          ? `  ${id}: ${s.skipped}`
+          : `  ${id}: sim ${s.simPoints} pts / ${s.simComments} comments vs real ${s.realPoints} / ${s.realComments}` +
+              (s.aborted ? ` (aborted: ${s.aborted})` : '') +
+              (s.truncatedAtStep === null
+                ? ''
+                : ` (truncated at step ${s.truncatedAtStep})`)
       );
     } catch (err) {
       deps.log(`  ${id}: failed — ${(err as Error).message}`);
@@ -159,8 +247,8 @@ async function runBacktest(
     deps.log('backtest: every thread failed');
     return 1;
   }
-  const agg = aggregate(ordered);
-  const meta = { stamp, steps, seed: rngSeed };
+  const agg = aggregate(ordered, rngSeed);
+  const meta = { stamp, steps, seed: rngSeed, set, platform: platform.id };
   const outDir = join(root, stamp);
   mkdirSync(outDir, { recursive: true });
   writeFileSync(
@@ -173,7 +261,7 @@ async function runBacktest(
     writeFileSync(history, `# Backtest history\n\n${HISTORY_HEADER}\n`);
   appendFileSync(
     history,
-    `${historyRow(agg, { ...meta, note: v.note || `${ordered.length} threads` })}\n`
+    `${historyRow(agg, { ...meta, n: ids.length, note: v.note || `${ordered.length} threads` })}\n`
   );
   deps.log(`scorecard: ${join(outDir, 'scorecard.md')}`);
   return 0;

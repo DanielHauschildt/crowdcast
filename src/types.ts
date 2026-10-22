@@ -1,5 +1,9 @@
-export type Vote = 'up' | 'none' | 'flag';
+import type { Author } from './platform.js';
+
+/** A reaction from the platform's `votes`; 'none' is no reaction (HN: up, none, flag). */
+export type Vote = string;
 export type Tier = 'haiku' | 'sonnet' | 'opus';
+/** HN's visibility bands; other platforms name their own (`Platform.bands`). */
 export type Band = 'top10' | 'top30' | 'page2' | 'new';
 
 /** Author id of the person who submitted the post and answers in the thread. */
@@ -27,6 +31,11 @@ export interface Seed {
   segments: Segment[];
   activeCount: number;
   voterCount: number;
+  /** From platform.yaml; `loadSeed` fills in `hn`. */
+  platform?: string;
+  author?: Author;
+  /** platform.yaml's other keys, for the platform. */
+  options?: Record<string, unknown>;
 }
 
 export interface Persona {
@@ -76,7 +85,7 @@ export type SimEvent =
       step: number;
       voter: string;
       target: string;
-      value: 'up' | 'flag';
+      value: string;
     }
   | { kind: 'visit'; step: number; actor: string }
   | { kind: 'leave'; step: number; actor: string }
@@ -85,7 +94,7 @@ export type SimEvent =
       kind: 'step-end';
       step: number;
       score: number;
-      band: Band;
+      band: string;
       points: number;
       flags: number;
       calls: number;

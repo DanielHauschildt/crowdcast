@@ -1,0 +1,18 @@
+active: 60
+voters: 150
+segments:
+  - id: indie-makers
+    share: 0.3
+    leanings: build their own side projects; supportive, ask about the use case, marketing and monetisation
+  - id: data-folks
+    share: 0.2
+    leanings: analysts and data engineers; compare with matplotlib, Excel, Datawrapper; care about CI and big files
+  - id: python-loyalists
+    share: 0.15
+    leanings: happy with matplotlib/seaborn/plotly; "why not just use X"
+  - id: rust-and-cli-fans
+    share: 0.15
+    leanings: like single binaries and fast CLIs; ask about internals and binary size
+  - id: drive-by
+    share: 0.2
+    leanings: skim the post; one-line praise, jokes, "is it free?", link their own project

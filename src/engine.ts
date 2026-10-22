@@ -4,13 +4,14 @@ import { agentTurn } from './agents.js';
 import { EVENTS_FILE, readEvents } from './events.js';
 import { founderTurn, pickFounderReplies } from './founder.js';
 import { BudgetExceeded, LlmFatal, type Llm } from './llm.js';
+import type { Author, Platform } from './platform.js';
+import hn from './platforms/hn/index.js';
 import { rngFor } from './rng.js';
-import { ageHours, bandFor, DEFAULT_STEPS, planVisits } from './schedule.js';
+import { ageHours, planVisits } from './schedule.js';
 import {
   applyEvent,
   newCommentId,
   postPoints,
-  postRankScore,
   renderThread,
   replay,
   topComments,
@@ -40,8 +41,15 @@ export interface RunConfig {
   llm: Llm;
   rngSeed: number;
   runDir: string;
+  /** Default: HN. */
+  platform?: Platform;
+  /** Default: the seed's. */
+  author?: Author;
+  /** Default: the platform's. */
   steps?: number;
   maxErrorRate?: number;
+  /** Calls this run may spend; a step that would overrun it is not started and the run ends truncated. */
+  maxCalls?: number;
   onStep?: (e: StepEnd) => void;
 }
 
@@ -49,6 +57,8 @@ export interface RunResult {
   events: SimEvent[];
   state: ThreadState;
   aborted: string | null;
+  /** The first step not run because it would overrun `maxCalls`. */
+  truncatedAtStep: number | null;
 }
 
 const chunk = <T>(xs: readonly T[], n: number): T[][] =>
@@ -57,8 +67,12 @@ const chunk = <T>(xs: readonly T[], n: number): T[][] =>
   );
 
 export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
-  const steps = cfg.steps ?? DEFAULT_STEPS;
+  const platform = cfg.platform ?? hn;
+  const author = cfg.author ?? cfg.seed.author;
+  const steps = cfg.steps ?? platform.defaultSteps;
   const maxErrorRate = cfg.maxErrorRate ?? 0.1;
+  const maxCalls = cfg.maxCalls ?? Infinity;
+  const firstCall = cfg.llm.callCount;
   const file = join(cfg.runDir, EVENTS_FILE);
   mkdirSync(cfg.runDir, { recursive: true });
 
@@ -110,15 +124,17 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
     };
 
     try {
-      const band = bandFor(postRankScore(state, ageHours(step)));
       const plan = planVisits({
         rng: rngFor(cfg.rngSeed, step),
-        band,
-        step,
+        fraction: platform.visibility(state, step, author).visitorFraction,
         personas: cfg.personas.personas,
         voters: cfg.personas.voters,
         state
       });
+      const planned =
+        plan.agents.length + Math.ceil(plan.voters.length / VOTER_BATCH) + 1;
+      if (cfg.llm.callCount - firstCall + planned > maxCalls)
+        return { events, state, aborted: null, truncatedAtStep: step };
 
       // 1. Agents — all see the same snapshot; visits are logged before any action.
       const view = renderThread(state, { maxChars: RENDER_CHARS });
@@ -131,7 +147,8 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
             thread: view,
             ownComments: [...state.comments.values()].filter(
               (c) => c.author === persona.id
-            )
+            ),
+            platform
           })
         )
       );
@@ -151,7 +168,13 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
           });
         for (const id of a.upvoteComments) {
           if (state.comments.has(id))
-            emit({ kind: 'vote', step, voter: p.id, target: id, value: 'up' });
+            emit({
+              kind: 'vote',
+              step,
+              voter: p.id,
+              target: id,
+              value: platform.commentVote
+            });
         }
         if (a.comment?.text.trim()) {
           const parent = state.comments.has(a.comment.parent)
@@ -179,7 +202,8 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
             post: state.post,
             context: cfg.seed.context,
             comments: shown,
-            batch: step * 100 + i
+            batch: step * 100 + i,
+            platform
           })
         )
       );
@@ -218,7 +242,8 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
         post: state.post,
         founderAnswers: cfg.seed.founderAnswers,
         thread: renderThread(state, { maxChars: RENDER_CHARS }),
-        step
+        step,
+        platform
       });
       if (!fr.ok) fail(FOUNDER, fr.error);
       else {
@@ -236,17 +261,20 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
     } catch (err) {
       if (err instanceof LlmFatal || err instanceof BudgetExceeded) {
         flush([...batch, { kind: 'abort', step, reason: err.message }]);
-        return { events, state, aborted: err.message };
+        return { events, state, aborted: err.message, truncatedAtStep: null };
       }
       throw err;
     }
 
-    const score = postRankScore(state, ageHours(step + 1));
     const end: StepEnd = {
       kind: 'step-end',
       step,
-      score,
-      band: bandFor(score),
+      score: platform.rankScore(
+        state,
+        ageHours(step + 1, platform.stepMinutes),
+        author
+      ),
+      band: platform.visibility(state, step + 1, author).band,
       points: postPoints(state),
       flags: state.postFlags,
       calls,
@@ -258,10 +286,10 @@ export async function runSimulation(cfg: RunConfig): Promise<RunResult> {
     if (calls > 0 && failed / calls > maxErrorRate) {
       const reason = `error rate ${failed}/${calls} in step ${step} exceeds ${maxErrorRate}`;
       flush([{ kind: 'abort', step, reason }]);
-      return { events, state, aborted: reason };
+      return { events, state, aborted: reason, truncatedAtStep: null };
     }
   }
-  return { events, state, aborted: null };
+  return { events, state, aborted: null, truncatedAtStep: null };
 }
 
 /** Rough expected call counts, assuming the post hovers around the 30-on-front-page band. */

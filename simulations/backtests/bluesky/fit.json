@@ -1,0 +1,11 @@
+{
+  "fittedAt": "2026-10-20",
+  "n": 32,
+  "constants": {
+    "baseReach": 0.0001977471204982261,
+    "repostFactor": 0.0000869541599482896,
+    "halfLifeHours": 1.0517982188339379,
+    "reposterFollowers": 1867.3083333333334,
+    "authorFollowers": 5521
+  }
+}
